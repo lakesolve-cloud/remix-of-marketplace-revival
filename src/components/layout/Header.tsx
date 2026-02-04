@@ -10,11 +10,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import fabcLogo from "@/assets/fabc-logo.png";
 
 const navigation = [
   { name: "Home", href: "/" },
   { name: "Marketplace", href: "/marketplace" },
-  { name: "Real Estate", href: "/marketplace?category=real-estate" },
   { name: "Services", href: "/marketplace?category=services" },
   { name: "Jobs", href: "/jobs" },
   { name: "Community", href: "/community" },
@@ -36,11 +36,9 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-              <span className="text-lg font-bold text-primary-foreground">F</span>
-            </div>
+            <img src={fabcLogo} alt="Festac Amuwo Business Connect" className="h-10 w-auto" />
             <span className="hidden font-display text-xl font-bold text-foreground sm:block">
-              Festac<span className="text-primary">Connect</span>
+              Festac<span className="text-primary">Amuwo</span>
             </span>
           </Link>
 
@@ -120,9 +118,9 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Post Listing Button */}
+            {/* List Your Business Button */}
             <Button asChild className="hidden sm:flex bg-accent hover:bg-accent/90 text-accent-foreground">
-              <Link to="/dashboard/listings/new">Post Listing</Link>
+              <Link to="/dashboard/listings/new">List Your Business</Link>
             </Button>
 
             {/* Mobile Menu Toggle */}
@@ -175,7 +173,7 @@ export function Header() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="mt-2 px-4 py-3 text-sm font-medium rounded-lg bg-accent text-accent-foreground text-center"
               >
-                Post Listing
+                List Your Business
               </Link>
             </nav>
           </div>

@@ -3,16 +3,15 @@ import { useParams, Link } from "react-router-dom";
 import {
   MapPin,
   Clock,
-  Eye,
+  Star,
   Heart,
   Share2,
   Phone,
+  ExternalLink,
   ChevronLeft,
   ChevronRight,
-  Star,
   Shield,
   Flag,
-  ExternalLink,
   Instagram,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,106 +27,99 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
-// Mock listing data
-const listing = {
-  id: "1",
-  title: "Modern 3-Bedroom Flat for Rent",
-  description: `Beautiful and spacious 3-bedroom apartment available for rent in the heart of Festac Town. 
+// Mock business data
+const business = {
+  id: "biz1",
+  name: "Mama's Kitchen",
+  description: `Welcome to Mama's Kitchen, your home for authentic Nigerian cuisine in the heart of Festac Town.
 
-This property features:
-• 3 large bedrooms with built-in wardrobes
-• 2 modern bathrooms with hot/cold water
-• Spacious living and dining area
-• Fully fitted kitchen with cabinets
-• Tiled floors throughout
-• Pop ceiling with recessed lighting
-• 24/7 security with CCTV
-• Dedicated parking space
-• Steady power supply (prepaid meter)
+We offer:
+• Traditional Nigerian dishes (Jollof Rice, Fried Rice, Amala, Eba, Pounded Yam)
+• Assorted soups (Egusi, Ogbono, Efo Riro, Pepper Soup)
+• Grilled fish and meat
+• Small chops and snacks
+• Catering services for events
 
-The apartment is located in a serene environment on 2nd Avenue, close to schools, hospitals, and markets. Suitable for families or working professionals.
+Our restaurant has been serving the Festac community for over 15 years with love and dedication. We use only fresh ingredients and traditional recipes passed down through generations.
 
-Available for immediate occupancy. Rent is ₦800,000 per year (negotiable). 1 year agreement, 1 year security deposit.`,
-  price: "₦800,000/year",
-  category: "Real Estate",
-  subcategory: "Apartments",
-  location: "2nd Avenue, Festac Town, Lagos",
+Open daily from 8am to 10pm. Delivery available within Festac Town and environs.`,
+  category: "Restaurant",
+  subcategory: "Nigerian Cuisine",
+  location: "23 2nd Avenue, Festac Town, Lagos",
   images: [
-    "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200&h=800&fit=crop",
-    "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200&h=800&fit=crop",
-    "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=1200&h=800&fit=crop",
-    "https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?w=1200&h=800&fit=crop",
+    "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&h=800&fit=crop",
+    "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&h=800&fit=crop",
+    "https://images.unsplash.com/photo-1544148103-0773bf10d330?w=1200&h=800&fit=crop",
+    "https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=1200&h=800&fit=crop",
   ],
-  timeAgo: "2 hours ago",
-  views: 234,
+  rating: 4.8,
+  reviews: 124,
   isFeatured: true,
-  seller: {
-    id: "seller1",
-    name: "Chioma Properties",
+  owner: {
+    id: "owner1",
+    name: "Mrs. Adaobi Okonkwo",
     avatar: "",
     isVerified: true,
-    rating: 4.8,
-    reviews: 45,
-    memberSince: "2023",
-    responseRate: "95%",
-    phone: "+234 801 234 5678",
-    whatsapp: "+2348012345678",
-    instagram: "chioma_properties",
+    memberSince: "2019",
+    phone: "+234 803 456 7890",
+    whatsapp: "+2348034567890",
+    instagram: "mamaskitchen_festac",
   },
-  specs: [
-    { label: "Bedrooms", value: "3" },
-    { label: "Bathrooms", value: "2" },
-    { label: "Type", value: "Flat" },
-    { label: "Condition", value: "Newly Renovated" },
+  hours: [
+    { day: "Monday - Friday", time: "8:00 AM - 10:00 PM" },
+    { day: "Saturday", time: "9:00 AM - 11:00 PM" },
+    { day: "Sunday", time: "10:00 AM - 9:00 PM" },
   ],
+  services: ["Dine-in", "Takeaway", "Delivery", "Catering"],
 };
 
-const relatedListings = [
+const relatedBusinesses = [
   {
-    id: "6",
-    title: "2-Bedroom Bungalow for Sale",
-    price: "₦35,000,000",
-    location: "5th Avenue, Festac",
-    image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=300&fit=crop",
-  },
-  {
-    id: "10",
-    title: "Self-Contain Apartment",
-    price: "₦350,000/year",
-    location: "7th Avenue, Festac",
-    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop",
-  },
-  {
-    id: "11",
-    title: "Shop Space for Rent",
-    price: "₦500,000/year",
+    id: "biz5",
+    name: "Festac Grill House",
+    category: "Restaurant",
     location: "1st Avenue, Festac",
-    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop",
+    rating: 4.5,
+  },
+  {
+    id: "biz6",
+    name: "Iya Basira Foods",
+    category: "Restaurant",
+    location: "4th Avenue, Festac",
+    image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=300&fit=crop",
+    rating: 4.7,
+  },
+  {
+    id: "biz7",
+    name: "ChopLife Kitchen",
+    category: "Restaurant",
+    location: "5th Avenue, Festac",
+    image: "https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=400&h=300&fit=crop",
+    rating: 4.4,
   },
 ];
 
-export default function ListingDetail() {
+export default function BusinessDetail() {
   const { id } = useParams();
   const [currentImage, setCurrentImage] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
 
   const nextImage = () => {
-    setCurrentImage((prev) => (prev + 1) % listing.images.length);
+    setCurrentImage((prev) => (prev + 1) % business.images.length);
   };
 
   const prevImage = () => {
-    setCurrentImage((prev) => (prev - 1 + listing.images.length) % listing.images.length);
+    setCurrentImage((prev) => (prev - 1 + business.images.length) % business.images.length);
   };
 
   const handleWhatsAppEnquiry = () => {
-    const message = encodeURIComponent(`Hello! I'm interested in your listing "${listing.title}" on Festac Amuwo Business Connect. Is it still available?`);
-    window.open(`https://wa.me/${listing.seller.whatsapp}?text=${message}`, '_blank');
+    const message = encodeURIComponent(`Hello! I found your business "${business.name}" on Festac Amuwo Business Connect. I'd like to make an enquiry.`);
+    window.open(`https://wa.me/${business.owner.whatsapp}?text=${message}`, '_blank');
   };
 
   const handleInstagramVisit = () => {
-    if (listing.seller.instagram) {
-      window.open(`https://instagram.com/${listing.seller.instagram}`, '_blank');
-    }
+    window.open(`https://instagram.com/${business.owner.instagram}`, '_blank');
   };
 
   return (
@@ -140,18 +132,11 @@ export default function ListingDetail() {
               Home
             </Link>
             <span className="text-muted-foreground">/</span>
-            <Link to="/marketplace" className="text-muted-foreground hover:text-foreground">
-              Marketplace
+            <Link to="/marketplace?type=business" className="text-muted-foreground hover:text-foreground">
+              Businesses
             </Link>
             <span className="text-muted-foreground">/</span>
-            <Link
-              to="/marketplace?category=real-estate"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Real Estate
-            </Link>
-            <span className="text-muted-foreground">/</span>
-            <span className="text-foreground">{listing.title}</span>
+            <span className="text-foreground">{business.name}</span>
           </nav>
         </div>
       </div>
@@ -164,8 +149,8 @@ export default function ListingDetail() {
             <div className="relative rounded-xl overflow-hidden bg-muted">
               <div className="aspect-[16/10]">
                 <img
-                  src={listing.images[currentImage]}
-                  alt={listing.title}
+                  src={business.images[currentImage]}
+                  alt={business.name}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -190,7 +175,7 @@ export default function ListingDetail() {
 
               {/* Indicators */}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                {listing.images.map((_, idx) => (
+                {business.images.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setCurrentImage(idx)}
@@ -204,16 +189,16 @@ export default function ListingDetail() {
               </div>
 
               {/* Featured Badge */}
-              {listing.isFeatured && (
+              {business.isFeatured && (
                 <Badge className="absolute top-4 left-4 bg-accent text-accent-foreground">
-                  Featured
+                  Featured Business
                 </Badge>
               )}
             </div>
 
             {/* Thumbnails */}
             <div className="flex gap-2 overflow-x-auto pb-2">
-              {listing.images.map((img, idx) => (
+              {business.images.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentImage(idx)}
@@ -230,57 +215,65 @@ export default function ListingDetail() {
             <div className="card-festac p-6">
               <div className="flex flex-wrap items-center gap-3 mb-4">
                 <Badge variant="secondary" className="bg-primary/10 text-primary">
-                  {listing.category}
+                  {business.category}
                 </Badge>
-                <Badge variant="outline">{listing.subcategory}</Badge>
+                <Badge variant="outline">{business.subcategory}</Badge>
+                <div className="flex items-center gap-1 ml-auto">
+                  <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                  <span className="font-semibold">{business.rating}</span>
+                  <span className="text-muted-foreground">({business.reviews} reviews)</span>
+                </div>
               </div>
 
               <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-4">
-                {listing.title}
+                {business.name}
               </h1>
 
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
                 <span className="flex items-center gap-1">
                   <MapPin className="h-4 w-4" />
-                  {listing.location}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  Posted {listing.timeAgo}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Eye className="h-4 w-4" />
-                  {listing.views} views
+                  {business.location}
                 </span>
               </div>
 
-              {/* Specs */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                {listing.specs.map((spec) => (
-                  <div key={spec.label} className="bg-muted/50 rounded-lg p-3 text-center">
-                    <div className="text-sm text-muted-foreground">{spec.label}</div>
-                    <div className="font-semibold text-foreground">{spec.value}</div>
-                  </div>
+              {/* Services */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                {business.services.map((service) => (
+                  <Badge key={service} variant="outline" className="bg-muted/50">
+                    {service}
+                  </Badge>
                 ))}
+              </div>
+
+              {/* Business Hours */}
+              <div className="bg-muted/50 rounded-lg p-4 mb-6">
+                <h3 className="font-semibold flex items-center gap-2 mb-3">
+                  <Clock className="h-4 w-4" />
+                  Business Hours
+                </h3>
+                <div className="space-y-2">
+                  {business.hours.map((item) => (
+                    <div key={item.day} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{item.day}</span>
+                      <span className="font-medium">{item.time}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <Separator className="my-6" />
 
-              <h2 className="font-display font-semibold text-lg mb-4">Description</h2>
+              <h2 className="font-display font-semibold text-lg mb-4">About</h2>
               <div className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-line">
-                {listing.description}
+                {business.description}
               </div>
             </div>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Price & Actions */}
+            {/* Contact & Actions */}
             <div className="card-festac p-6 sticky top-24">
-              <div className="text-3xl font-display font-bold text-primary mb-6">
-                {listing.price}
-              </div>
-
               {/* Action Buttons */}
               <div className="space-y-3 mb-6">
                 <Button 
@@ -295,9 +288,9 @@ export default function ListingDetail() {
                 </Button>
                 <Button variant="outline" className="w-full" size="lg">
                   <Phone className="h-4 w-4 mr-2" />
-                  Call Seller
+                  Call Business
                 </Button>
-                {listing.seller.instagram && (
+                {business.owner.instagram && (
                   <Button 
                     variant="outline" 
                     className="w-full" 
@@ -311,7 +304,7 @@ export default function ListingDetail() {
               </div>
 
               {/* Quick Actions */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 mb-6">
                 <Button
                   variant="outline"
                   size="icon"
@@ -331,11 +324,11 @@ export default function ListingDetail() {
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Report Listing</DialogTitle>
+                      <DialogTitle>Report Business</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                       <p className="text-sm text-muted-foreground">
-                        Please describe why you're reporting this listing.
+                        Please describe why you're reporting this business.
                       </p>
                       <Textarea placeholder="Describe the issue..." />
                       <Button className="w-full">Submit Report</Button>
@@ -346,42 +339,26 @@ export default function ListingDetail() {
 
               <Separator className="my-6" />
 
-              {/* Seller Info */}
+              {/* Owner Info */}
               <div>
-                <h3 className="font-semibold mb-4">Seller Information</h3>
-                <Link
-                  to={`/seller/${listing.seller.id}`}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                >
+                <h3 className="font-semibold mb-4">Business Owner</h3>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                   <Avatar className="h-12 w-12">
-                    <AvatarImage src={listing.seller.avatar} />
+                    <AvatarImage src={business.owner.avatar} />
                     <AvatarFallback className="bg-primary/10 text-primary">
-                      {listing.seller.name.charAt(0)}
+                      {business.owner.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center gap-1">
-                      <span className="font-medium">{listing.seller.name}</span>
-                      {listing.seller.isVerified && (
+                      <span className="font-medium">{business.owner.name}</span>
+                      {business.owner.isVerified && (
                         <Shield className="h-4 w-4 text-primary" />
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      {listing.seller.rating} ({listing.seller.reviews} reviews)
+                    <div className="text-sm text-muted-foreground">
+                      Member since {business.owner.memberSince}
                     </div>
-                  </div>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                </Link>
-
-                <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
-                  <div className="p-2 rounded bg-muted/30 text-center">
-                    <div className="text-muted-foreground">Member since</div>
-                    <div className="font-medium">{listing.seller.memberSince}</div>
-                  </div>
-                  <div className="p-2 rounded bg-muted/30 text-center">
-                    <div className="text-muted-foreground">Response rate</div>
-                    <div className="font-medium">{listing.seller.responseRate}</div>
                   </div>
                 </div>
               </div>
@@ -389,25 +366,31 @@ export default function ListingDetail() {
           </div>
         </div>
 
-        {/* Related Listings */}
+        {/* Related Businesses */}
         <div className="mt-12">
-          <h2 className="section-heading mb-6">Similar Listings</h2>
+          <h2 className="section-heading mb-6">Similar Businesses</h2>
           <div className="grid md:grid-cols-3 gap-6">
-            {relatedListings.map((item) => (
-              <Link key={item.id} to={`/listing/${item.id}`} className="card-festac group overflow-hidden">
+            {relatedBusinesses.map((item) => (
+              <Link key={item.id} to={`/business/${item.id}`} className="card-festac group overflow-hidden">
                 <div className="aspect-[4/3] overflow-hidden">
                   <img
                     src={item.image}
-                    alt={item.title}
+                    alt={item.name}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
                 <div className="p-4">
+                  <Badge variant="secondary" className="mb-2 bg-primary/10 text-primary text-xs">
+                    {item.category}
+                  </Badge>
                   <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                    {item.title}
+                    {item.name}
                   </h3>
                   <p className="text-sm text-muted-foreground mb-2">{item.location}</p>
-                  <p className="font-display font-bold text-primary">{item.price}</p>
+                  <div className="flex items-center gap-1">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="font-medium">{item.rating}</span>
+                  </div>
                 </div>
               </Link>
             ))}

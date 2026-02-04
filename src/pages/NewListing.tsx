@@ -245,13 +245,32 @@ export default function NewListing() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="whatsapp">WhatsApp (optional)</Label>
+                <Label htmlFor="whatsapp">WhatsApp Number *</Label>
                 <Input
                   id="whatsapp"
                   type="tel"
                   placeholder="+234 801 234 5678"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Buyers will contact you via WhatsApp for enquiries
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="instagram">Instagram Handle (optional)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+                <Input
+                  id="instagram"
+                  placeholder="yourbusiness"
+                  className="pl-8"
                 />
               </div>
+              <p className="text-xs text-muted-foreground">
+                Add your Instagram business page for more visibility
+              </p>
             </div>
           </CardContent>
         </Card>
