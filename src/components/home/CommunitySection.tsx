@@ -50,7 +50,7 @@ export function CommunitySection() {
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
           <div>
-            <h2 className="section-heading mb-2">Community Updates</h2>
+            <h2 className="section-heading mb-2">Community News</h2>
             <p className="text-muted-foreground">
               Stay connected with news, reviews, and events in Festac Town
             </p>
@@ -59,7 +59,7 @@ export function CommunitySection() {
             to="/community" 
             className="inline-flex items-center gap-2 text-primary font-medium hover:gap-3 transition-all"
           >
-            View All Updates
+            View All News
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>

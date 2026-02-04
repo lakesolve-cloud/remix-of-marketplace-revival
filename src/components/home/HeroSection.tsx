@@ -36,12 +36,12 @@ export function HeroSection() {
             {/* Location Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-background/10 backdrop-blur-sm text-primary-foreground/90 mb-6 animate-fade-in">
               <MapPin className="h-4 w-4" />
-              <span className="text-sm font-medium">Festac Town, Lagos, Nigeria</span>
+              <span className="text-sm font-medium">Festac Town, Amuwo-Odofin, Satellite Town, Lagos</span>
             </div>
 
             {/* Heading */}
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-6 animate-slide-up">
-              Connect with Your{" "}
+              Discover, Buy and Connect with Your{" "}
               <span className="text-accent">Festac</span>{" "}
               Community
             </h1>

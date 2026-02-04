@@ -7,6 +7,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import Index from "./pages/Index";
 import Marketplace from "./pages/Marketplace";
 import ListingDetail from "./pages/ListingDetail";
+import BusinessDetail from "./pages/BusinessDetail";
 import Jobs from "./pages/Jobs";
 import Community from "./pages/Community";
 import Login from "./pages/Login";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/listing/:id" element={<ListingDetail />} />
+            <Route path="/business/:id" element={<BusinessDetail />} />
             <Route path="/jobs" element={<Jobs />} />
             <Route path="/jobs/:id" element={<Jobs />} />
             <Route path="/community" element={<Community />} />
