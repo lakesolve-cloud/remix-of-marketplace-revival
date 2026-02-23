@@ -16,6 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import DashboardOverview from "./pages/DashboardOverview";
 import MyListings from "./pages/MyListings";
 import NewListing from "./pages/NewListing";
+import ListYourBusiness from "./pages/ListYourBusiness";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/jobs/:id" element={<Jobs />} />
             <Route path="/community" element={<Community />} />
             <Route path="/community/:id" element={<Community />} />
+            <Route path="/list-your-business" element={<ListYourBusiness />} />
           </Route>
 
           {/* Auth routes (no layout) */}

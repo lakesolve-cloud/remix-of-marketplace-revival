@@ -120,7 +120,7 @@ export function Header() {
 
             {/* List Your Business Button */}
             <Button asChild className="hidden sm:flex bg-accent hover:bg-accent/90 text-accent-foreground">
-              <Link to="/dashboard/listings/new">List Your Business</Link>
+              <Link to="/list-your-business">List Your Business</Link>
             </Button>
 
             {/* Mobile Menu Toggle */}
@@ -169,7 +169,7 @@ export function Header() {
                 </Link>
               ))}
               <Link
-                to="/dashboard/listings/new"
+                to="/list-your-business"
                 onClick={() => setMobileMenuOpen(false)}
                 className="mt-2 px-4 py-3 text-sm font-medium rounded-lg bg-accent text-accent-foreground text-center"
               >
