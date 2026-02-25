@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Upload, X, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +14,11 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function NewBusiness() {
   const navigate = useNavigate();
+  const { id } = useParams(); // edit mode if id exists
+  const isEditing = !!id;
   const { user } = useAuth();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -26,6 +29,8 @@ export default function NewBusiness() {
   const [whatsapp, setWhatsapp] = useState("");
   const [instagram, setInstagram] = useState("");
   const [services, setServices] = useState("");
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["business-categories"],
@@ -35,34 +40,129 @@ export default function NewBusiness() {
     },
   });
 
+  // Load existing business data when editing
+  const { data: existingBusiness } = useQuery({
+    queryKey: ["edit-business", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("businesses").select("*").eq("id", id!).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: isEditing,
+  });
+
+  useEffect(() => {
+    if (existingBusiness) {
+      setName(existingBusiness.name);
+      setDescription(existingBusiness.description || "");
+      setCategoryId(existingBusiness.category_id || "");
+      setSubcategory(existingBusiness.subcategory || "");
+      setLocation(existingBusiness.location || "");
+      setPhone(existingBusiness.phone || "");
+      setWhatsapp(existingBusiness.whatsapp || "");
+      setInstagram(existingBusiness.instagram || "");
+      setServices((existingBusiness.services || []).join(", "));
+      setExistingImages(existingBusiness.images || []);
+    }
+  }, [existingBusiness]);
+
   const selectedCategory = categories.find((c: any) => c.id === categoryId);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (imageFiles.length + existingImages.length + files.length > 5) {
+      toast({ title: "Maximum 5 images allowed", variant: "destructive" });
+      return;
+    }
+    setImageFiles((prev) => [...prev, ...files]);
+  };
+
+  const removeNewImage = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadImages = async (businessId: string): Promise<string[]> => {
+    const uploadedUrls: string[] = [];
+    for (const file of imageFiles) {
+      const ext = file.name.split(".").pop();
+      const path = `${user!.id}/businesses/${businessId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from("images").upload(path, file, { contentType: file.type });
+      if (!error) {
+        const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+        uploadedUrls.push(urlData.publicUrl);
+      }
+    }
+    return uploadedUrls;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     setIsLoading(true);
 
-    const { error } = await supabase.from("businesses").insert({
-      user_id: user.id,
-      name,
-      description,
-      category_id: categoryId || null,
-      category_name: selectedCategory?.name || "",
-      subcategory,
-      location,
-      phone,
-      whatsapp,
-      instagram,
-      services: services.split(",").map((s) => s.trim()).filter(Boolean),
-      status: "active",
-    });
+    try {
+      let allImages = [...existingImages];
 
-    setIsLoading(false);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Business created!" });
+      if (isEditing) {
+        // Upload new images
+        if (imageFiles.length > 0) {
+          const newUrls = await uploadImages(id!);
+          allImages = [...allImages, ...newUrls];
+        }
+
+        const { error } = await supabase.from("businesses").update({
+          name,
+          description,
+          category_id: categoryId || null,
+          category_name: selectedCategory?.name || "",
+          subcategory,
+          location,
+          phone,
+          whatsapp,
+          instagram,
+          services: services.split(",").map((s) => s.trim()).filter(Boolean),
+          images: allImages,
+        }).eq("id", id!);
+
+        if (error) throw error;
+        toast({ title: "Business updated!" });
+      } else {
+        // Create business first to get ID
+        const { data: newBiz, error } = await supabase.from("businesses").insert({
+          user_id: user.id,
+          name,
+          description,
+          category_id: categoryId || null,
+          category_name: selectedCategory?.name || "",
+          subcategory,
+          location,
+          phone,
+          whatsapp,
+          instagram,
+          services: services.split(",").map((s) => s.trim()).filter(Boolean),
+          status: "active",
+        }).select("id").single();
+
+        if (error) throw error;
+
+        // Upload images
+        if (imageFiles.length > 0 && newBiz) {
+          const urls = await uploadImages(newBiz.id);
+          await supabase.from("businesses").update({ images: urls }).eq("id", newBiz.id);
+        }
+
+        toast({ title: "Business created!" });
+      }
+
       navigate("/dashboard/businesses");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -72,8 +172,12 @@ export default function NewBusiness() {
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-2" />Back
         </Button>
-        <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">Create Business Profile</h1>
-        <p className="text-muted-foreground">Set up your business to attract customers</p>
+        <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
+          {isEditing ? "Edit Business Profile" : "Create Business Profile"}
+        </h1>
+        <p className="text-muted-foreground">
+          {isEditing ? "Update your business details" : "Set up your business to attract customers"}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -118,6 +222,43 @@ export default function NewBusiness() {
           </CardContent>
         </Card>
 
+        {/* Image Upload */}
+        <Card>
+          <CardHeader><CardTitle>Business Images</CardTitle></CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {existingImages.map((url, i) => (
+                <div key={`existing-${i}`} className="relative aspect-square rounded-lg overflow-hidden bg-muted group">
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => removeExistingImage(i)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {imageFiles.map((file, i) => (
+                <div key={`new-${i}`} className="relative aspect-square rounded-lg overflow-hidden bg-muted group">
+                  <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => removeNewImage(i)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {existingImages.length + imageFiles.length < 5 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                >
+                  <ImagePlus className="h-6 w-6" />
+                  <span className="text-xs">Add Image</span>
+                </button>
+              )}
+            </div>
+            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
+            <p className="text-xs text-muted-foreground mt-3">Upload up to 5 images. First image will be the cover.</p>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader><CardTitle>Contact Information</CardTitle></CardHeader>
           <CardContent className="space-y-6">
@@ -142,7 +283,7 @@ export default function NewBusiness() {
         </Card>
 
         <Button type="submit" size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto" disabled={isLoading}>
-          {isLoading ? "Creating..." : "Create Business"}
+          {isLoading ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Business" : "Create Business")}
         </Button>
       </form>
     </div>
