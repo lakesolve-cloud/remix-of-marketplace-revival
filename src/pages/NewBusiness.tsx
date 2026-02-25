@@ -31,6 +31,12 @@ export default function NewBusiness() {
   const [services, setServices] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [registrationStatus, setRegistrationStatus] = useState("");
+  const [sellsOnline, setSellsOnline] = useState("");
+  const [offersDelivery, setOffersDelivery] = useState("");
+  const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState("");
+  const [customCategory, setCustomCategory] = useState("");
 
   const { data: categories = [] } = useQuery({
     queryKey: ["business-categories"],
@@ -63,10 +69,20 @@ export default function NewBusiness() {
       setInstagram(existingBusiness.instagram || "");
       setServices((existingBusiness.services || []).join(", "));
       setExistingImages(existingBusiness.images || []);
+      setRegistrationStatus(existingBusiness.registration_status || "");
+      setSellsOnline(existingBusiness.sells_online || "");
+      setOffersDelivery(existingBusiness.offers_delivery || "");
+      setEmail(existingBusiness.email || "");
+      setWebsite(existingBusiness.website || "");
+      if (existingBusiness.category_id && !categories.find((c: any) => c.id === existingBusiness.category_id)) {
+        setCustomCategory(existingBusiness.category_name || "");
+        setCategoryId("other");
+      }
     }
   }, [existingBusiness]);
 
   const selectedCategory = categories.find((c: any) => c.id === categoryId);
+  const resolvedCategoryName = categoryId === "other" ? customCategory : (selectedCategory?.name || "");
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -117,8 +133,8 @@ export default function NewBusiness() {
         const { error } = await supabase.from("businesses").update({
           name,
           description,
-          category_id: categoryId || null,
-          category_name: selectedCategory?.name || "",
+          category_id: categoryId === "other" ? null : (categoryId || null),
+          category_name: resolvedCategoryName,
           subcategory,
           location,
           phone,
@@ -126,6 +142,11 @@ export default function NewBusiness() {
           instagram,
           services: services.split(",").map((s) => s.trim()).filter(Boolean),
           images: allImages,
+          registration_status: registrationStatus || null,
+          sells_online: sellsOnline || null,
+          offers_delivery: offersDelivery || null,
+          email: email || null,
+          website: website || null,
         }).eq("id", id!);
 
         if (error) throw error;
@@ -136,8 +157,8 @@ export default function NewBusiness() {
           user_id: user.id,
           name,
           description,
-          category_id: categoryId || null,
-          category_name: selectedCategory?.name || "",
+          category_id: categoryId === "other" ? null : (categoryId || null),
+          category_name: resolvedCategoryName,
           subcategory,
           location,
           phone,
@@ -145,6 +166,11 @@ export default function NewBusiness() {
           instagram,
           services: services.split(",").map((s) => s.trim()).filter(Boolean),
           status: "active",
+          registration_status: registrationStatus || null,
+          sells_online: sellsOnline || null,
+          offers_delivery: offersDelivery || null,
+          email: email || null,
+          website: website || null,
         }).select("id").single();
 
         if (error) throw error;
@@ -192,12 +218,16 @@ export default function NewBusiness() {
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label>Category *</Label>
-                <Select value={categoryId} onValueChange={setCategoryId}>
+                <Select value={categoryId} onValueChange={(val) => { setCategoryId(val); if (val !== "other") setCustomCategory(""); }}>
                   <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                   <SelectContent>
                     {categories.map((cat: any) => (<SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>))}
+                    <SelectItem value="other">Other (type your own)</SelectItem>
                   </SelectContent>
                 </Select>
+                {categoryId === "other" && (
+                  <Input placeholder="Enter your business category" value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} className="mt-2" required />
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="subcategory">Subcategory</Label>
@@ -218,6 +248,43 @@ export default function NewBusiness() {
             <div className="space-y-2">
               <Label htmlFor="location">Location *</Label>
               <Input id="location" placeholder="e.g., 23 2nd Avenue, Festac Town" value={location} onChange={(e) => setLocation(e.target.value)} required />
+            </div>
+
+            {/* Business Operations */}
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label>Registration Status</Label>
+                <Select value={registrationStatus} onValueChange={setRegistrationStatus}>
+                  <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="registered">Registered (CAC)</SelectItem>
+                    <SelectItem value="unregistered">Not Registered</SelectItem>
+                    <SelectItem value="in_progress">Registration In Progress</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Sell online or in-store?</Label>
+                <Select value={sellsOnline} onValueChange={setSellsOnline}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="online_only">Online Only</SelectItem>
+                    <SelectItem value="in_store_only">In-Store Only</SelectItem>
+                    <SelectItem value="both">Both Online & In-Store</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Offer delivery services?</Label>
+                <Select value={offersDelivery} onValueChange={setOffersDelivery}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                    <SelectItem value="limited">Limited Areas Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -278,6 +345,14 @@ export default function NewBusiness() {
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
                 <Input id="instagram" placeholder="yourbusiness" className="pl-8" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Business Email (optional)</Label>
+              <Input id="email" type="email" placeholder="info@yourbusiness.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="website">Website (optional)</Label>
+              <Input id="website" type="url" placeholder="https://yourbusiness.com" value={website} onChange={(e) => setWebsite(e.target.value)} />
             </div>
           </CardContent>
         </Card>

@@ -44,6 +44,7 @@ export type Database = {
           category_name: string | null
           created_at: string
           description: string | null
+          email: string | null
           featured_until: string | null
           hours: Json | null
           id: string
@@ -52,14 +53,18 @@ export type Database = {
           is_featured: boolean | null
           location: string | null
           name: string
+          offers_delivery: string | null
           phone: string | null
           rating: number | null
+          registration_status: string | null
           review_count: number | null
+          sells_online: string | null
           services: string[] | null
           status: string | null
           subcategory: string | null
           updated_at: string
           user_id: string
+          website: string | null
           whatsapp: string | null
         }
         Insert: {
@@ -67,6 +72,7 @@ export type Database = {
           category_name?: string | null
           created_at?: string
           description?: string | null
+          email?: string | null
           featured_until?: string | null
           hours?: Json | null
           id?: string
@@ -75,14 +81,18 @@ export type Database = {
           is_featured?: boolean | null
           location?: string | null
           name: string
+          offers_delivery?: string | null
           phone?: string | null
           rating?: number | null
+          registration_status?: string | null
           review_count?: number | null
+          sells_online?: string | null
           services?: string[] | null
           status?: string | null
           subcategory?: string | null
           updated_at?: string
           user_id: string
+          website?: string | null
           whatsapp?: string | null
         }
         Update: {
@@ -90,6 +100,7 @@ export type Database = {
           category_name?: string | null
           created_at?: string
           description?: string | null
+          email?: string | null
           featured_until?: string | null
           hours?: Json | null
           id?: string
@@ -98,14 +109,18 @@ export type Database = {
           is_featured?: boolean | null
           location?: string | null
           name?: string
+          offers_delivery?: string | null
           phone?: string | null
           rating?: number | null
+          registration_status?: string | null
           review_count?: number | null
+          sells_online?: string | null
           services?: string[] | null
           status?: string | null
           subcategory?: string | null
           updated_at?: string
           user_id?: string
+          website?: string | null
           whatsapp?: string | null
         }
         Relationships: [
