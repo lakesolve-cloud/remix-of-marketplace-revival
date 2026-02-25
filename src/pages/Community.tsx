@@ -1,105 +1,14 @@
-import { Link } from "react-router-dom";
 import { useState } from "react";
-import { MessageSquare, Calendar, Star, Users, Search, ArrowRight, ThumbsUp, MessageCircle } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { MessageSquare, Calendar, Star, Users, Search, ArrowRight, ThumbsUp, MessageCircle, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-const communityPosts = [
-  {
-    id: "1",
-    type: "news",
-    title: "New Road Construction on 2nd Avenue",
-    content: "Lagos State Government announces major road improvements in Festac Town. The project is expected to last 6 months and will include drainage improvements and street lighting.",
-    author: "FestacConnect Team",
-    avatar: "",
-    timeAgo: "3 hours ago",
-    likes: 45,
-    comments: 24,
-    category: "Infrastructure",
-  },
-  {
-    id: "2",
-    type: "review",
-    title: "Best Hair Salon in Festac - My Experience",
-    content: "I finally found an amazing stylist after trying several places. Glamour Beauty Salon on 3rd Avenue has the best service, reasonable prices, and a very professional team.",
-    author: "Ada Okwu",
-    avatar: "",
-    timeAgo: "1 day ago",
-    likes: 89,
-    comments: 12,
-    rating: 5,
-    category: "Beauty",
-  },
-  {
-    id: "3",
-    type: "event",
-    title: "Festac Town Clean-Up Day",
-    content: "Join us this Saturday for our monthly community clean-up initiative. We'll be focusing on the market area and surrounding streets. Refreshments will be provided.",
-    author: "Festac Youth Forum",
-    avatar: "",
-    timeAgo: "2 days ago",
-    likes: 156,
-    comments: 34,
-    date: "Feb 10, 2026",
-    attendees: 45,
-    category: "Community",
-  },
-  {
-    id: "4",
-    type: "discussion",
-    title: "Power Situation in Festac - Tips to Save on Generator Costs",
-    content: "With the current electricity situation, I thought I'd share some tips on how to reduce generator usage and save on fuel costs. Solar panels are becoming more affordable...",
-    author: "Emmanuel Okonkwo",
-    avatar: "",
-    timeAgo: "4 hours ago",
-    likes: 234,
-    comments: 67,
-    category: "Tips",
-  },
-  {
-    id: "5",
-    type: "review",
-    title: "Warning: Avoid This Car Mechanic",
-    content: "Had a terrible experience with a mechanic near the roundabout. Overcharged me and the repair didn't even fix the problem. Be careful and always get multiple quotes.",
-    author: "Chidi Nnamdi",
-    avatar: "",
-    timeAgo: "6 hours ago",
-    likes: 178,
-    comments: 45,
-    rating: 1,
-    category: "Automotive",
-  },
-];
-
-const upcomingEvents = [
-  {
-    id: "e1",
-    title: "Community Town Hall Meeting",
-    date: "Feb 15, 2026",
-    time: "4:00 PM",
-    location: "Festac Town Hall",
-    attendees: 120,
-  },
-  {
-    id: "e2",
-    title: "Festac Football Tournament",
-    date: "Feb 20, 2026",
-    time: "9:00 AM",
-    location: "Festac Sports Complex",
-    attendees: 250,
-  },
-  {
-    id: "e3",
-    title: "Business Networking Event",
-    date: "Feb 25, 2026",
-    time: "6:00 PM",
-    location: "Festac Events Center",
-    attendees: 85,
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
 
 const typeStyles: Record<string, { badge: string; icon: React.ElementType }> = {
   news: { badge: "bg-blue-500/10 text-blue-600", icon: MessageSquare },
@@ -110,16 +19,67 @@ const typeStyles: Record<string, { badge: string; icon: React.ElementType }> = {
 
 export default function Community() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
+  const navigate = useNavigate();
 
-  const filteredPosts = communityPosts.filter(
-    (post) =>
-      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const { data: posts = [], isLoading } = useQuery({
+    queryKey: ["community-posts", searchQuery, activeTab],
+    queryFn: async () => {
+      let query = supabase
+        .from("community_posts")
+        .select("*")
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+
+      if (activeTab !== "all") {
+        query = query.eq("type", activeTab === "reviews" ? "review" : activeTab === "events" ? "event" : activeTab === "discussions" ? "discussion" : activeTab);
+      }
+      if (searchQuery) {
+        query = query.or(`title.ilike.%${searchQuery}%,content.ilike.%${searchQuery}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch profiles for post authors
+  const userIds = [...new Set(posts.map((p: any) => p.user_id))];
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["community-profiles", userIds],
+    queryFn: async () => {
+      if (userIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name, avatar_url")
+        .in("user_id", userIds);
+      if (error) throw error;
+      return data;
+    },
+    enabled: userIds.length > 0,
+  });
+
+  const profileMap = Object.fromEntries(profiles.map((p: any) => [p.user_id, p]));
+
+  // Upcoming events
+  const { data: upcomingEvents = [] } = useQuery({
+    queryKey: ["upcoming-events"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("community_posts")
+        .select("*")
+        .eq("type", "event")
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      return data;
+    },
+  });
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <div className="bg-muted/30 border-b border-border">
         <div className="container-festac py-8">
           <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
@@ -133,9 +93,7 @@ export default function Community() {
 
       <div className="container-festac py-8">
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-2">
-            {/* Search & Actions */}
             <div className="flex gap-4 mb-6">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -147,13 +105,13 @@ export default function Community() {
                   className="pl-10"
                 />
               </div>
-              <Button className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Button className="bg-accent hover:bg-accent/90 text-accent-foreground" onClick={() => navigate("/community/new")}>
+                <Plus className="mr-2 h-4 w-4" />
                 New Post
               </Button>
             </div>
 
-            {/* Tabs */}
-            <Tabs defaultValue="all" className="mb-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
               <TabsList>
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="news">News</TabsTrigger>
@@ -163,11 +121,15 @@ export default function Community() {
               </TabsList>
             </Tabs>
 
-            {/* Posts */}
             <div className="space-y-4">
-              {filteredPosts.map((post) => {
-                const style = typeStyles[post.type];
+              {isLoading && (
+                <div className="text-center py-8 text-muted-foreground">Loading posts...</div>
+              )}
+              {posts.map((post: any) => {
+                const style = typeStyles[post.type] || typeStyles.discussion;
                 const Icon = style.icon;
+                const profile = profileMap[post.user_id];
+                const authorName = profile ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "User" : "User";
 
                 return (
                   <Link
@@ -177,74 +139,50 @@ export default function Community() {
                   >
                     <div className="flex items-start gap-4">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src={post.avatar} />
+                        <AvatarImage src={profile?.avatar_url || ""} />
                         <AvatarFallback className="bg-primary/10 text-primary">
-                          {post.author.charAt(0)}
+                          {authorName.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
-
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <span className="font-medium text-foreground">
-                            {post.author}
-                          </span>
+                          <span className="font-medium text-foreground">{authorName}</span>
                           <Badge variant="secondary" className={style.badge}>
                             <Icon className="h-3 w-3 mr-1" />
                             {post.type.charAt(0).toUpperCase() + post.type.slice(1)}
                           </Badge>
-                          <Badge variant="outline">{post.category}</Badge>
+                          {post.category && <Badge variant="outline">{post.category}</Badge>}
                           <span className="text-sm text-muted-foreground">
-                            {post.timeAgo}
+                            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                           </span>
                         </div>
-
                         <h2 className="font-display text-lg font-semibold text-foreground group-hover:text-primary transition-colors mb-2">
                           {post.title}
                         </h2>
+                        <p className="text-muted-foreground line-clamp-2 mb-4">{post.content}</p>
 
-                        <p className="text-muted-foreground line-clamp-2 mb-4">
-                          {post.content}
-                        </p>
-
-                        {/* Rating for reviews */}
                         {post.type === "review" && post.rating && (
                           <div className="flex items-center gap-1 mb-3">
                             {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-4 w-4 ${
-                                  i < post.rating!
-                                    ? "fill-yellow-400 text-yellow-400"
-                                    : "text-muted"
-                                }`}
-                              />
+                              <Star key={i} className={`h-4 w-4 ${i < post.rating! ? "fill-yellow-400 text-yellow-400" : "text-muted"}`} />
                             ))}
                           </div>
                         )}
 
-                        {/* Event date */}
-                        {post.type === "event" && post.date && (
+                        {post.type === "event" && post.event_date && (
                           <div className="flex items-center gap-4 mb-3 text-sm">
                             <span className="flex items-center gap-1 text-primary font-medium">
-                              <Calendar className="h-4 w-4" />
-                              {post.date}
-                            </span>
-                            <span className="flex items-center gap-1 text-muted-foreground">
-                              <Users className="h-4 w-4" />
-                              {post.attendees} attending
+                              <Calendar className="h-4 w-4" />{post.event_date}
                             </span>
                           </div>
                         )}
 
-                        {/* Engagement */}
                         <div className="flex items-center gap-6 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            <ThumbsUp className="h-4 w-4" />
-                            {post.likes}
+                            <ThumbsUp className="h-4 w-4" />{post.likes_count || 0}
                           </span>
                           <span className="flex items-center gap-1">
-                            <MessageCircle className="h-4 w-4" />
-                            {post.comments} comments
+                            <MessageCircle className="h-4 w-4" />{post.comments_count || 0} comments
                           </span>
                         </div>
                       </div>
@@ -252,52 +190,38 @@ export default function Community() {
                   </Link>
                 );
               })}
+              {!isLoading && posts.length === 0 && (
+                <div className="text-center py-16">
+                  <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground mb-4">No posts yet. Start the conversation!</p>
+                  <Button onClick={() => navigate("/community/new")}>Create Post</Button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Upcoming Events */}
             <div className="card-festac p-6">
-              <h3 className="font-display font-semibold text-lg mb-4">
-                Upcoming Events
-              </h3>
+              <h3 className="font-display font-semibold text-lg mb-4">Upcoming Events</h3>
               <div className="space-y-4">
-                {upcomingEvents.map((event) => (
-                  <Link
-                    key={event.id}
-                    to={`/community/events/${event.id}`}
-                    className="block p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                  >
-                    <h4 className="font-medium text-foreground mb-1">
-                      {event.title}
-                    </h4>
+                {upcomingEvents.length === 0 && <p className="text-sm text-muted-foreground">No upcoming events</p>}
+                {upcomingEvents.map((event: any) => (
+                  <Link key={event.id} to={`/community/${event.id}`} className="block p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                    <h4 className="font-medium text-foreground mb-1">{event.title}</h4>
                     <div className="text-sm text-muted-foreground space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-3 w-3" />
-                        {event.date} at {event.time}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-3 w-3" />
-                        {event.attendees} attending
-                      </div>
+                      {event.event_date && (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-3 w-3" />{event.event_date} {event.event_time && `at ${event.event_time}`}
+                        </div>
+                      )}
                     </div>
                   </Link>
                 ))}
               </div>
-              <Button variant="link" className="w-full mt-4 text-primary" asChild>
-                <Link to="/community/events">
-                  View All Events
-                  <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
             </div>
 
-            {/* Community Guidelines */}
             <div className="card-festac p-6">
-              <h3 className="font-display font-semibold text-lg mb-4">
-                Community Guidelines
-              </h3>
+              <h3 className="font-display font-semibold text-lg mb-4">Community Guidelines</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>• Be respectful and courteous</li>
                 <li>• No spam or self-promotion</li>
