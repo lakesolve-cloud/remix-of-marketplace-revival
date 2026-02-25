@@ -34,6 +34,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
 import Safety from "./pages/Safety";
+import FAQ from "./pages/FAQ";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="/terms" element={<Terms />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/safety" element={<Safety />} />
+              <Route path="/faq" element={<FAQ />} />
             </Route>
 
             {/* Auth routes (no layout) */}

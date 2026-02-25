@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import fabcLogo from "@/assets/fabc-logo.png";
+import fabcLogo from "@/assets/festac-amuwo-logo.png";
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);

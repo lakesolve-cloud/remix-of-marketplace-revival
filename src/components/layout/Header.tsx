@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import fabcLogo from "@/assets/fabc-logo.png";
+import fabcLogo from "@/assets/festac-amuwo-logo.png";
 
 const navigation = [
   { name: "Home", href: "/" },

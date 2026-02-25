@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import fabcLogo from "@/assets/fabc-logo.png";
+import fabcLogo from "@/assets/festac-amuwo-logo.png";
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
