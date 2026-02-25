@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 const categories = [
@@ -38,6 +39,21 @@ export default function NewListing() {
   const [whatsapp, setWhatsapp] = useState("");
   const [instagram, setInstagram] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [businessId, setBusinessId] = useState("");
+
+  const { data: userBusinesses = [] } = useQuery({
+    queryKey: ["user-businesses", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("businesses")
+        .select("id, name")
+        .eq("user_id", user!.id)
+        .eq("status", "active")
+        .order("name");
+      return data || [];
+    },
+    enabled: !!user,
+  });
 
   const selectedCategoryData = categories.find((c) => c.value === selectedCategory);
 
@@ -94,6 +110,7 @@ export default function NewListing() {
         whatsapp,
         instagram,
         is_featured: isFeatured,
+        business_id: (businessId && businessId !== "none") ? businessId : null,
         status: "active",
       }).select("id").single();
 
@@ -131,6 +148,22 @@ export default function NewListing() {
               <Label htmlFor="title">Title *</Label>
               <Input id="title" placeholder="e.g., Modern 3-Bedroom Flat for Rent" value={title} onChange={(e) => setTitle(e.target.value)} required />
             </div>
+
+            {userBusinesses.length > 0 && (
+              <div className="space-y-2">
+                <Label>Post under a Business (optional)</Label>
+                <Select value={businessId} onValueChange={setBusinessId}>
+                  <SelectTrigger><SelectValue placeholder="Select a business or post independently" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No business (independent listing)</SelectItem>
+                    {userBusinesses.map((biz: any) => (
+                      <SelectItem key={biz.id} value={biz.id}>{biz.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Link this listing to one of your registered businesses</p>
+              </div>
+            )}
 
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
