@@ -45,7 +45,7 @@ export default function ListYourBusiness() {
             Join hundreds of Festac businesses already growing their customer base on our platform.
           </p>
           <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-base px-8">
-            <Link to="/register?redirect=/dashboard/listings/new">Get Started — It's Free</Link>
+            <Link to="/register?redirect=/dashboard/businesses/new">Get Started — It's Free</Link>
           </Button>
         </div>
       </section>
@@ -94,7 +94,7 @@ export default function ListYourBusiness() {
           </div>
           <div className="text-center mt-12">
             <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground px-8">
-              <Link to="/register?redirect=/dashboard/listings/new">Create Your Free Account</Link>
+              <Link to="/register?redirect=/dashboard/businesses/new">Create Your Free Account</Link>
             </Button>
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function ListYourBusiness() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild size="lg" variant="secondary" className="px-8">
-              <Link to="/register?redirect=/dashboard/listings/new">Get Started Now</Link>
+              <Link to="/register?redirect=/dashboard/businesses/new">Get Started Now</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 px-8">
               <Link to="/marketplace">View Directory First</Link>

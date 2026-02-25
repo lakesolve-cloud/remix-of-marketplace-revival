@@ -30,6 +30,10 @@ import DashboardSettings from "./pages/DashboardSettings";
 import DashboardFavorites from "./pages/DashboardFavorites";
 import DashboardNotifications from "./pages/DashboardNotifications";
 import NotFound from "./pages/NotFound";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Contact from "./pages/Contact";
+import Safety from "./pages/Safety";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +58,10 @@ const App = () => (
               <Route path="/community/new" element={<ProtectedRoute><NewCommunityPost /></ProtectedRoute>} />
               <Route path="/community/:id" element={<CommunityPostDetail />} />
               <Route path="/list-your-business" element={<ListYourBusiness />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/safety" element={<Safety />} />
             </Route>
 
             {/* Auth routes (no layout) */}
