@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Facebook, Twitter, Instagram, Mail, Phone, MapPin } from "lucide-react";
+import fabcLogo from "@/assets/festac-amuwo-logo.png";
 
 const footerLinks = {
   marketplace: [
@@ -14,6 +15,7 @@ const footerLinks = {
     { name: "Jobs Board", href: "/jobs" },
   ],
   support: [
+    { name: "FAQ", href: "/faq" },
     { name: "Contact Us", href: "/contact" },
     { name: "Safety Tips", href: "/safety" },
   ],
@@ -37,9 +39,7 @@ export function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                <span className="text-xl font-bold text-primary-foreground">F</span>
-              </div>
+              <img src={fabcLogo} alt="FestacConnect" className="h-10 w-auto" />
               <span className="font-display text-2xl font-bold text-background">
                 Festac<span className="text-primary">Connect</span>
               </span>
