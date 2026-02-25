@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -8,7 +14,11 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   profile: any;
-  signUp: (email: string, password: string, metadata?: Record<string, any>) => Promise<any>;
+  signUp: (
+    email: string,
+    password: string,
+    metadata?: Record<string, any>,
+  ) => Promise<any>;
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -31,23 +41,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(data);
   };
 
+  // console.log(fetchProfile);
+
   const refreshProfile = async () => {
     if (user) await fetchProfile(user.id);
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          setTimeout(() => fetchProfile(session.user.id), 0);
-        } else {
-          setProfile(null);
-        }
-        setLoading(false);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        setTimeout(() => fetchProfile(session.user.id), 0);
+      } else {
+        setProfile(null);
       }
-    );
+      setLoading(false);
+    });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -61,15 +73,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, metadata?: Record<string, any>) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    metadata?: Record<string, any>,
+  ) => {
+    console.log(email, password, metadata);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      phone: metadata?.phone,
       options: {
         data: metadata,
         emailRedirectTo: window.location.origin,
       },
     });
+    console.log(data.user);
+    if (data.user && !error) {
+      await supabase.from("profiles").insert({
+        user_id: data.user.id,
+        first_name: metadata?.first_name,
+        last_name: metadata?.last_name,
+        phone: metadata?.phone,
+        account_type: metadata?.account_type,
+      });
+    }
     return { data, error };
   };
 
@@ -87,7 +115,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, profile, signUp, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        profile,
+        signUp,
+        signIn,
+        signOut,
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
