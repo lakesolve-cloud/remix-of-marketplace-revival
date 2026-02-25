@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, X, Info } from "lucide-react";
+import { ArrowLeft, Info, ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,7 @@ export default function NewListing() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
@@ -36,48 +37,79 @@ export default function NewListing() {
   const [phone, setPhone] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [instagram, setInstagram] = useState("");
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
 
   const selectedCategoryData = categories.find((c) => c.value === selectedCategory);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (imageFiles.length + files.length > 5) {
+      toast({ title: "Maximum 5 images allowed", variant: "destructive" });
+      return;
+    }
+    setImageFiles((prev) => [...prev, ...files]);
+  };
+
+  const removeImage = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadImages = async (listingId: string): Promise<string[]> => {
+    const urls: string[] = [];
+    for (const file of imageFiles) {
+      const ext = file.name.split(".").pop();
+      const path = `${user!.id}/listings/${listingId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from("images").upload(path, file, { contentType: file.type });
+      if (!error) {
+        const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+        urls.push(urlData.publicUrl);
+      }
+    }
+    return urls;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     setIsLoading(true);
 
-    const priceNum = parseFloat(price) || 0;
-    const priceLabel = priceType === "per-month" ? `₦${priceNum.toLocaleString()}/month`
-      : priceType === "per-year" ? `₦${priceNum.toLocaleString()}/year`
-      : priceType === "starting" ? `From ₦${priceNum.toLocaleString()}`
-      : `₦${priceNum.toLocaleString()}`;
+    try {
+      const priceNum = parseFloat(price) || 0;
+      const priceLabel = priceType === "per-month" ? `₦${priceNum.toLocaleString()}/month`
+        : priceType === "per-year" ? `₦${priceNum.toLocaleString()}/year`
+        : priceType === "starting" ? `From ₦${priceNum.toLocaleString()}`
+        : `₦${priceNum.toLocaleString()}`;
 
-    const { error } = await supabase.from("listings").insert({
-      user_id: user.id,
-      title,
-      description,
-      category: selectedCategory,
-      subcategory: selectedSubcategory,
-      price: priceNum,
-      price_label: priceLabel,
-      price_type: priceType,
-      location,
-      phone,
-      whatsapp,
-      instagram,
-      is_featured: isFeatured,
-      status: "active",
-    });
+      const { data: newListing, error } = await supabase.from("listings").insert({
+        user_id: user.id,
+        title,
+        description,
+        category: selectedCategory,
+        subcategory: selectedSubcategory,
+        price: priceNum,
+        price_label: priceLabel,
+        price_type: priceType,
+        location,
+        phone,
+        whatsapp,
+        instagram,
+        is_featured: isFeatured,
+        status: "active",
+      }).select("id").single();
 
-    setIsLoading(false);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Listing published!" });
-      if (isFeatured) {
-        // Redirect to payment for featured
-        navigate("/dashboard/listings");
-      } else {
-        navigate("/dashboard/listings");
+      if (error) throw error;
+
+      if (imageFiles.length > 0 && newListing) {
+        const urls = await uploadImages(newListing.id);
+        await supabase.from("listings").update({ images: urls }).eq("id", newListing.id);
       }
+
+      toast({ title: "Listing published!" });
+      navigate("/dashboard/listings");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -121,6 +153,35 @@ export default function NewListing() {
               <Label htmlFor="description">Description *</Label>
               <Textarea id="description" placeholder="Describe your listing in detail..." rows={6} value={description} onChange={(e) => setDescription(e.target.value)} required />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Image Upload */}
+        <Card>
+          <CardHeader><CardTitle>Listing Images</CardTitle></CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {imageFiles.map((file, i) => (
+                <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-muted group">
+                  <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {imageFiles.length < 5 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                >
+                  <ImagePlus className="h-6 w-6" />
+                  <span className="text-xs">Add Image</span>
+                </button>
+              )}
+            </div>
+            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
+            <p className="text-xs text-muted-foreground mt-3">Upload up to 5 images. First image will be the cover.</p>
           </CardContent>
         </Card>
 

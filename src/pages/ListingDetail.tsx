@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { MapPin, Clock, Eye, Heart, Share2, Phone, ChevronLeft, ChevronRight, Star, Shield, Flag, Instagram } from "lucide-react";
+import { MapPin, Clock, Eye, Heart, Share2, Phone, ChevronLeft, ChevronRight, Shield, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,16 +18,25 @@ export default function ListingDetail() {
   const [currentImage, setCurrentImage] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
 
-  const { data: listing, isLoading } = useQuery({
+  const { data: listing, isLoading, error } = useQuery({
     queryKey: ["listing", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("listings").select("*, profiles:user_id(*)").eq("id", id).single();
+      const { data, error } = await supabase.from("listings").select("*").eq("id", id!).single();
       if (error) throw error;
       // Increment views
-      supabase.from("listings").update({ views: (data.views || 0) + 1 }).eq("id", id).then();
+      supabase.from("listings").update({ views: (data.views || 0) + 1 }).eq("id", id!).then();
       return data;
     },
     enabled: !!id,
+  });
+
+  const { data: sellerProfile } = useQuery({
+    queryKey: ["listing-seller", listing?.user_id],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("*").eq("user_id", listing!.user_id).single();
+      return data;
+    },
+    enabled: !!listing?.user_id,
   });
 
   const { data: relatedListings = [] } = useQuery({
@@ -40,8 +48,43 @@ export default function ListingDetail() {
     enabled: !!listing?.category,
   });
 
-  if (isLoading || !listing) {
-    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+  useQuery({
+    queryKey: ["listing-fav", id, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from("favorites").select("id").eq("user_id", user!.id).eq("listing_id", id!).maybeSingle();
+      setIsFavorited(!!data);
+      return data;
+    },
+    enabled: !!user && !!id,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container-festac py-8">
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <Skeleton className="aspect-[16/10] rounded-xl" />
+              <div className="space-y-4 p-6">
+                <Skeleton className="h-8 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            </div>
+            <Skeleton className="h-96 rounded-xl" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !listing) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <p className="text-muted-foreground">Listing not found or could not be loaded.</p>
+        <Button asChild variant="outline"><Link to="/marketplace">Back to Marketplace</Link></Button>
+      </div>
+    );
   }
 
   const images = listing.images?.length ? listing.images : ["/placeholder.svg"];
@@ -64,8 +107,6 @@ export default function ListingDetail() {
       setIsFavorited(true);
     }
   };
-
-  const profile = listing.profiles as any;
 
   return (
     <div className="min-h-screen bg-background">
@@ -120,7 +161,7 @@ export default function ListingDetail() {
 
               <div className="space-y-3 mb-6">
                 {listing.whatsapp && (
-                  <Button className="w-full bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.9)] text-primary-foreground" size="lg" onClick={handleWhatsAppEnquiry}>
+                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" size="lg" onClick={handleWhatsAppEnquiry}>
                     <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                     Enquire on WhatsApp
                   </Button>
@@ -148,17 +189,17 @@ export default function ListingDetail() {
 
               <Separator className="my-6" />
 
-              {profile && (
+              {sellerProfile && (
                 <div>
                   <h3 className="font-semibold mb-4">Seller Information</h3>
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={profile.avatar_url} />
-                      <AvatarFallback className="bg-primary/10 text-primary">{(profile.first_name || "U")[0]}</AvatarFallback>
+                      <AvatarImage src={sellerProfile.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary">{(sellerProfile.first_name || "U")[0]}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <span className="font-medium">{profile.first_name} {profile.last_name}</span>
-                      <div className="text-sm text-muted-foreground">Member since {new Date(profile.created_at).getFullYear()}</div>
+                      <span className="font-medium">{sellerProfile.first_name} {sellerProfile.last_name}</span>
+                      <div className="text-sm text-muted-foreground">Member since {new Date(sellerProfile.created_at).getFullYear()}</div>
                     </div>
                   </div>
                 </div>
