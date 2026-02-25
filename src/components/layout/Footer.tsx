@@ -11,20 +11,15 @@ const footerLinks = {
   ],
   community: [
     { name: "Community Feed", href: "/community" },
-    { name: "Local News", href: "/community/news" },
-    { name: "Events", href: "/community/events" },
-    { name: "Festac Reviews", href: "/community/reviews" },
+    { name: "Jobs Board", href: "/jobs" },
   ],
   support: [
-    { name: "Help Center", href: "/help" },
     { name: "Contact Us", href: "/contact" },
-    { name: "How to Post", href: "/help/posting" },
     { name: "Safety Tips", href: "/safety" },
   ],
   legal: [
     { name: "Privacy Policy", href: "/privacy" },
     { name: "Terms of Service", href: "/terms" },
-    { name: "Cookie Policy", href: "/cookies" },
   ],
 };
 
