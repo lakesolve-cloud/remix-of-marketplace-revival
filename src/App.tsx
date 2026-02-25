@@ -11,7 +11,11 @@ import Marketplace from "./pages/Marketplace";
 import ListingDetail from "./pages/ListingDetail";
 import BusinessDetail from "./pages/BusinessDetail";
 import Jobs from "./pages/Jobs";
+import JobDetail from "./pages/JobDetail";
+import PostJob from "./pages/PostJob";
 import Community from "./pages/Community";
+import CommunityPostDetail from "./pages/CommunityPostDetail";
+import NewCommunityPost from "./pages/NewCommunityPost";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -44,9 +48,11 @@ const App = () => (
               <Route path="/listing/:id" element={<ListingDetail />} />
               <Route path="/business/:id" element={<BusinessDetail />} />
               <Route path="/jobs" element={<Jobs />} />
-              <Route path="/jobs/:id" element={<Jobs />} />
+              <Route path="/jobs/:id" element={<JobDetail />} />
+              <Route path="/jobs/post" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
               <Route path="/community" element={<Community />} />
-              <Route path="/community/:id" element={<Community />} />
+              <Route path="/community/new" element={<ProtectedRoute><NewCommunityPost /></ProtectedRoute>} />
+              <Route path="/community/:id" element={<CommunityPostDetail />} />
               <Route path="/list-your-business" element={<ListYourBusiness />} />
             </Route>
 
