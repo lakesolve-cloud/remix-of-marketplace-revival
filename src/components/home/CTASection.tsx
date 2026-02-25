@@ -49,7 +49,7 @@ export function CTASection() {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+                <Button asChild size="lg" className="bg-background text-foreground hover:bg-background/90">
                   <Link to="/faq">
                     Learn How It Works
                   </Link>
