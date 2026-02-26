@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +29,7 @@ export default function NewBusiness() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [subcategory, setSubcategory] = useState("");
+  // const [subcategory, setSubcategory] = useState("");
   const [location, setLocation] = useState("");
   const [phone, setPhone] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -41,7 +47,10 @@ export default function NewBusiness() {
   const { data: categories = [] } = useQuery({
     queryKey: ["business-categories"],
     queryFn: async () => {
-      const { data } = await supabase.from("business_categories").select("*").order("name");
+      const { data } = await supabase
+        .from("business_categories")
+        .select("*")
+        .order("name");
       return data || [];
     },
   });
@@ -50,7 +59,11 @@ export default function NewBusiness() {
   const { data: existingBusiness } = useQuery({
     queryKey: ["edit-business", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("businesses").select("*").eq("id", id!).single();
+      const { data, error } = await supabase
+        .from("businesses")
+        .select("*")
+        .eq("id", id!)
+        .single();
       if (error) throw error;
       return data;
     },
@@ -62,7 +75,6 @@ export default function NewBusiness() {
       setName(existingBusiness.name);
       setDescription(existingBusiness.description || "");
       setCategoryId(existingBusiness.category_id || "");
-      setSubcategory(existingBusiness.subcategory || "");
       setLocation(existingBusiness.location || "");
       setPhone(existingBusiness.phone || "");
       setWhatsapp(existingBusiness.whatsapp || "");
@@ -74,7 +86,10 @@ export default function NewBusiness() {
       setOffersDelivery(existingBusiness.offers_delivery || "");
       setEmail(existingBusiness.email || "");
       setWebsite(existingBusiness.website || "");
-      if (existingBusiness.category_id && !categories.find((c: any) => c.id === existingBusiness.category_id)) {
+      if (
+        existingBusiness.category_id &&
+        !categories.find((c: any) => c.id === existingBusiness.category_id)
+      ) {
         setCustomCategory(existingBusiness.category_name || "");
         setCategoryId("other");
       }
@@ -82,7 +97,8 @@ export default function NewBusiness() {
   }, [existingBusiness]);
 
   const selectedCategory = categories.find((c: any) => c.id === categoryId);
-  const resolvedCategoryName = categoryId === "other" ? customCategory : (selectedCategory?.name || "");
+  const resolvedCategoryName =
+    categoryId === "other" ? customCategory : selectedCategory?.name || "";
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -106,9 +122,13 @@ export default function NewBusiness() {
     for (const file of imageFiles) {
       const ext = file.name.split(".").pop();
       const path = `${user!.id}/businesses/${businessId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from("images").upload(path, file, { contentType: file.type });
+      const { error } = await supabase.storage
+        .from("images")
+        .upload(path, file, { contentType: file.type });
       if (!error) {
-        const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+        const { data: urlData } = supabase.storage
+          .from("images")
+          .getPublicUrl(path);
         uploadedUrls.push(urlData.publicUrl);
       }
     }
@@ -130,55 +150,71 @@ export default function NewBusiness() {
           allImages = [...allImages, ...newUrls];
         }
 
-        const { error } = await supabase.from("businesses").update({
-          name,
-          description,
-          category_id: categoryId === "other" ? null : (categoryId || null),
-          category_name: resolvedCategoryName,
-          subcategory,
-          location,
-          phone,
-          whatsapp,
-          instagram,
-          services: services.split(",").map((s) => s.trim()).filter(Boolean),
-          images: allImages,
-          registration_status: registrationStatus || null,
-          sells_online: sellsOnline || null,
-          offers_delivery: offersDelivery || null,
-          email: email || null,
-          website: website || null,
-        }).eq("id", id!);
+        const { error } = await supabase
+          .from("businesses")
+          .update({
+            name,
+            description,
+            category_id: categoryId === "other" ? null : categoryId || null,
+            category_name: resolvedCategoryName,
+            // subcategory,
+            location,
+            phone,
+            whatsapp,
+            instagram,
+            services: services
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean),
+            images: allImages,
+            registration_status: registrationStatus || null,
+            sells_online: sellsOnline || null,
+            offers_delivery: offersDelivery || null,
+            email: email || null,
+            website: website || null,
+          })
+          .eq("id", id!);
 
         if (error) throw error;
         toast({ title: "Business updated!" });
       } else {
         // Create business first to get ID
-        const { data: newBiz, error } = await supabase.from("businesses").insert({
-          user_id: user.id,
-          name,
-          description,
-          category_id: categoryId === "other" ? null : (categoryId || null),
-          category_name: resolvedCategoryName,
-          subcategory,
-          location,
-          phone,
-          whatsapp,
-          instagram,
-          services: services.split(",").map((s) => s.trim()).filter(Boolean),
-          status: "active",
-          registration_status: registrationStatus || null,
-          sells_online: sellsOnline || null,
-          offers_delivery: offersDelivery || null,
-          email: email || null,
-          website: website || null,
-        }).select("id").single();
+        const { data: newBiz, error } = await supabase
+          .from("businesses")
+          .insert({
+            user_id: user.id,
+            name,
+            description,
+            category_id: categoryId === "other" ? null : categoryId || null,
+            category_name: resolvedCategoryName,
+            // subcategory,
+            location,
+            phone,
+            whatsapp,
+            instagram,
+            services: services
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean),
+            status: "active",
+            registration_status: registrationStatus || null,
+            sells_online: sellsOnline || null,
+            offers_delivery: offersDelivery || null,
+            email: email || null,
+            website: website || null,
+          })
+          .select("id")
+          .single();
 
         if (error) throw error;
 
         // Upload images
         if (imageFiles.length > 0 && newBiz) {
           const urls = await uploadImages(newBiz.id);
-          await supabase.from("businesses").update({ images: urls }).eq("id", newBiz.id);
+          await supabase
+            .from("businesses")
+            .update({ images: urls })
+            .eq("id", newBiz.id);
         }
 
         toast({ title: "Business created!" });
@@ -186,7 +222,11 @@ export default function NewBusiness() {
 
       navigate("/dashboard/businesses");
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -195,78 +235,144 @@ export default function NewBusiness() {
   return (
     <div className="p-6 lg:p-8 max-w-4xl">
       <div className="mb-8">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />Back
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(-1)}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
         </Button>
         <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
           {isEditing ? "Edit Business Profile" : "Create Business Profile"}
         </h1>
         <p className="text-muted-foreground">
-          {isEditing ? "Update your business details" : "Set up your business to attract customers"}
+          {isEditing
+            ? "Update your business details"
+            : "Set up your business to attract customers"}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <Card>
-          <CardHeader><CardTitle>Business Information</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Business Information</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="name">Business Name *</Label>
-              <Input id="name" placeholder="e.g., Mama's Kitchen" value={name} onChange={(e) => setName(e.target.value)} required />
+              <Input
+                id="name"
+                placeholder="e.g., Mama's Kitchen"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label>Category *</Label>
-                <Select value={categoryId} onValueChange={(val) => { setCategoryId(val); if (val !== "other") setCustomCategory(""); }}>
-                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <Select
+                  value={categoryId}
+                  onValueChange={(val) => {
+                    setCategoryId(val);
+                    if (val !== "other") setCustomCategory("");
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {categories.map((cat: any) => (<SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>))}
+                    {categories.map((cat: any) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
                     <SelectItem value="other">Other (type your own)</SelectItem>
                   </SelectContent>
                 </Select>
                 {categoryId === "other" && (
-                  <Input placeholder="Enter your business category" value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} className="mt-2" required />
+                  <Input
+                    placeholder="Enter your business category"
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    className="mt-2"
+                    required
+                  />
                 )}
               </div>
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="subcategory">Subcategory</Label>
-                <Input id="subcategory" placeholder="e.g., Nigerian Cuisine" value={subcategory} onChange={(e) => setSubcategory(e.target.value)} />
-              </div>
+                <Input
+                  id="subcategory"
+                  placeholder="e.g., Nigerian Cuisine"
+                  value={subcategory}
+                  onChange={(e) => setSubcategory(e.target.value)}
+                />
+              </div> */}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="description">Description *</Label>
-              <Textarea id="description" placeholder="Describe your business..." rows={6} value={description} onChange={(e) => setDescription(e.target.value)} required />
+              <Textarea
+                id="description"
+                placeholder="Describe your business..."
+                rows={6}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="services">Services (comma-separated)</Label>
-              <Input id="services" placeholder="e.g., Dine-in, Takeaway, Delivery" value={services} onChange={(e) => setServices(e.target.value)} />
+              <Input
+                id="services"
+                placeholder="e.g., Dine-in, Takeaway, Delivery"
+                value={services}
+                onChange={(e) => setServices(e.target.value)}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="location">Location *</Label>
-              <Input id="location" placeholder="e.g., 23 2nd Avenue, Festac Town" value={location} onChange={(e) => setLocation(e.target.value)} required />
+              <Input
+                id="location"
+                placeholder="e.g., 23 2nd Avenue, Festac Town"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                required
+              />
             </div>
 
             {/* Business Operations */}
             <div className="grid md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label>Registration Status</Label>
-                <Select value={registrationStatus} onValueChange={setRegistrationStatus}>
-                  <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                <Select
+                  value={registrationStatus}
+                  onValueChange={setRegistrationStatus}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="registered">Registered (CAC)</SelectItem>
                     <SelectItem value="unregistered">Not Registered</SelectItem>
-                    <SelectItem value="in_progress">Registration In Progress</SelectItem>
+                    <SelectItem value="in_progress">
+                      Registration In Progress
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Sell online or in-store?</Label>
                 <Select value={sellsOnline} onValueChange={setSellsOnline}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="online_only">Online Only</SelectItem>
                     <SelectItem value="in_store_only">In-Store Only</SelectItem>
@@ -276,8 +382,13 @@ export default function NewBusiness() {
               </div>
               <div className="space-y-2">
                 <Label>Offer delivery services?</Label>
-                <Select value={offersDelivery} onValueChange={setOffersDelivery}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <Select
+                  value={offersDelivery}
+                  onValueChange={setOffersDelivery}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="yes">Yes</SelectItem>
                     <SelectItem value="no">No</SelectItem>
@@ -291,21 +402,45 @@ export default function NewBusiness() {
 
         {/* Image Upload */}
         <Card>
-          <CardHeader><CardTitle>Business Images</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Business Images</CardTitle>
+          </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {existingImages.map((url, i) => (
-                <div key={`existing-${i}`} className="relative aspect-square rounded-lg overflow-hidden bg-muted group">
-                  <img src={url} alt="" className="w-full h-full object-cover" />
-                  <button type="button" onClick={() => removeExistingImage(i)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div
+                  key={`existing-${i}`}
+                  className="relative aspect-square rounded-lg overflow-hidden bg-muted group"
+                >
+                  <img
+                    src={url}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeExistingImage(i)}
+                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
                     <X className="h-3 w-3" />
                   </button>
                 </div>
               ))}
               {imageFiles.map((file, i) => (
-                <div key={`new-${i}`} className="relative aspect-square rounded-lg overflow-hidden bg-muted group">
-                  <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
-                  <button type="button" onClick={() => removeNewImage(i)} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div
+                  key={`new-${i}`}
+                  className="relative aspect-square rounded-lg overflow-hidden bg-muted group"
+                >
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeNewImage(i)}
+                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
                     <X className="h-3 w-3" />
                   </button>
                 </div>
@@ -321,44 +456,100 @@ export default function NewBusiness() {
                 </button>
               )}
             </div>
-            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
-            <p className="text-xs text-muted-foreground mt-3">Upload up to 5 images. First image will be the cover.</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleImageSelect}
+            />
+            <p className="text-xs text-muted-foreground mt-3">
+              Upload up to 5 images. First image will be the cover.
+            </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Contact Information</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Contact Information</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number *</Label>
-                <Input id="phone" type="tel" placeholder="+234 801 234 5678" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+234 801 234 5678"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="whatsapp">WhatsApp Number *</Label>
-                <Input id="whatsapp" type="tel" placeholder="+234 801 234 5678" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} required />
+                <Input
+                  id="whatsapp"
+                  type="tel"
+                  placeholder="+234 801 234 5678"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  required
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="instagram">Instagram Handle (optional)</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
-                <Input id="instagram" placeholder="yourbusiness" className="pl-8" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  @
+                </span>
+                <Input
+                  id="instagram"
+                  placeholder="yourbusiness"
+                  className="pl-8"
+                  value={instagram}
+                  onChange={(e) => setInstagram(e.target.value)}
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Business Email (optional)</Label>
-              <Input id="email" type="email" placeholder="info@yourbusiness.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input
+                id="email"
+                type="email"
+                placeholder="info@yourbusiness.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="website">Website (optional)</Label>
-              <Input id="website" type="url" placeholder="https://yourbusiness.com" value={website} onChange={(e) => setWebsite(e.target.value)} />
+              <Input
+                id="website"
+                type="url"
+                placeholder="https://yourbusiness.com"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+              />
             </div>
           </CardContent>
         </Card>
 
-        <Button type="submit" size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto" disabled={isLoading}>
-          {isLoading ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Business" : "Create Business")}
+        <Button
+          type="submit"
+          size="lg"
+          className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto"
+          disabled={isLoading}
+        >
+          {isLoading
+            ? isEditing
+              ? "Updating..."
+              : "Creating..."
+            : isEditing
+              ? "Update Business"
+              : "Create Business"}
         </Button>
       </form>
     </div>
