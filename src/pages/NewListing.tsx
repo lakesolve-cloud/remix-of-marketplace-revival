@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ImagePlus, X } from "lucide-react";
+import { ArrowLeft, Info, ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -145,19 +146,25 @@ export default function NewListing() {
 
   const uploadImages = async (listingId: string): Promise<string[]> => {
     const urls: string[] = [];
+
     for (const file of imageFiles) {
       const ext = file.name.split(".").pop();
       const path = `${user!.id}/listings/${listingId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
       const { error } = await supabase.storage
         .from("images")
-        .upload(path, file, { contentType: file.type });
-      if (!error) {
-        const { data: urlData } = supabase.storage
-          .from("images")
-          .getPublicUrl(path);
-        urls.push(urlData.publicUrl);
+        .upload(path, file);
+
+      if (error) {
+        console.error("Upload error:", error);
+        throw error;
       }
+
+      const { data } = supabase.storage.from("images").getPublicUrl(path);
+
+      urls.push(data.publicUrl);
     }
+
     return urls;
   };
 
@@ -200,7 +207,8 @@ export default function NewListing() {
             whatsapp,
             instagram,
             is_featured: isFeatured,
-            business_id: businessId || null,
+            business_id:
+              businessId && businessId !== "none" ? businessId : null,
             images: allImages,
           })
           .eq("id", id!);
@@ -224,7 +232,8 @@ export default function NewListing() {
             whatsapp,
             instagram,
             is_featured: isFeatured,
-            business_id: businessId || null,
+            business_id:
+              businessId && businessId !== "none" ? businessId : null,
             images: allImages,
             status: "active",
           })
@@ -263,7 +272,7 @@ export default function NewListing() {
         <p className="text-muted-foreground">
           {isEditing
             ? "Update your listing details"
-            : "Fill in the details to post a new listing"}
+            : "Fill in the details below to post a new listing"}
         </p>
       </div>
 
@@ -277,11 +286,36 @@ export default function NewListing() {
             <div className="space-y-2">
               <Label>Title *</Label>
               <Input
+                id="title"
+                placeholder="e.g., Modern 3-Bedroom Flat for Rent"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
               />
             </div>
+            {userBusinesses.length > 0 && (
+              <div className="space-y-2">
+                <Label>Post under a Business (optional)</Label>
+                <Select value={businessId} onValueChange={setBusinessId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a business or post independently" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      No business (independent listing)
+                    </SelectItem>
+                    {userBusinesses.map((biz: any) => (
+                      <SelectItem key={biz.id} value={biz.id}>
+                        {biz.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Link this listing to one of your registered businesses
+                </p>
+              </div>
+            )}
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label>Category *</Label>
@@ -324,6 +358,8 @@ export default function NewListing() {
             <div className="space-y-2">
               <Label>Description *</Label>
               <Textarea
+                id="description"
+                placeholder="Describe your listing in detail..."
                 rows={6}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -413,7 +449,9 @@ export default function NewListing() {
               <div className="space-y-2">
                 <Label>Price (₦) *</Label>
                 <Input
+                  id="price"
                   type="number"
+                  placeholder="e.g., 800000"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   required
@@ -438,6 +476,8 @@ export default function NewListing() {
             <div className="space-y-2">
               <Label>Location *</Label>
               <Input
+                id="location"
+                placeholder="e.g., 2nd Avenue, Festac Town"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 required
@@ -445,25 +485,36 @@ export default function NewListing() {
             </div>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label>Phone *</Label>
+                <Label>Phone Number *</Label>
                 <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+234 801 234 5678"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label>WhatsApp *</Label>
+                <Label>WhatsApp Number *</Label>
                 <Input
+                  id="whatsapp"
+                  type="tel"
+                  placeholder="+234 801 234 5678"
                   value={whatsapp}
                   onChange={(e) => setWhatsapp(e.target.value)}
                   required
                 />
+                <p className="text-xs text-muted-foreground">
+                  Buyers will contact you via WhatsApp
+                </p>
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Instagram (optional)</Label>
+              <Label>Instagram Handle (optional)</Label>
               <Input
+                id="instagram"
+                placeholder="yourbusiness"
                 value={instagram}
                 onChange={(e) => setInstagram(e.target.value)}
               />
@@ -471,7 +522,33 @@ export default function NewListing() {
           </CardContent>
         </Card>
 
-        <Button
+        <Card className="bg-gradient-to-br from-accent/10 to-accent/5 border-accent/20">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-display font-semibold text-foreground mb-1">
+                  Feature this listing
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Get more visibility by featuring your listing at the top of
+                  search results
+                </p>
+              </div>
+              <Switch checked={isFeatured} onCheckedChange={setIsFeatured} />
+            </div>
+            {isFeatured && (
+              <div className="mt-4 p-3 rounded-lg bg-background/50 flex items-start gap-2">
+                <Info className="h-4 w-4 text-accent mt-0.5" />
+                <p className="text-sm text-muted-foreground">
+                  Featured listings get up to 5x more views. Fee: ₦2,000/week.
+                  You can pay after publishing.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* <Button
           type="submit"
           size="lg"
           className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto"
@@ -484,7 +561,24 @@ export default function NewListing() {
             : isEditing
               ? "Update Listing"
               : "Publish Listing"}
-        </Button>
+        </Button> */}
+
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button
+            type="submit"
+            size="lg"
+            className="bg-accent hover:bg-accent/90 text-accent-foreground flex-1"
+            disabled={isLoading}
+          >
+            {isLoading
+              ? isEditing
+                ? "Updating..."
+                : "Publishing..."
+              : isEditing
+                ? "Update Listing"
+                : "Publish Listing"}
+          </Button>
+        </div>
       </form>
     </div>
   );
