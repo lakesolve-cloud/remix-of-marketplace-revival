@@ -1,12 +1,40 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search, MoreHorizontal, Eye, Edit, Trash2, ExternalLink, Rocket } from "lucide-react";
+import {
+  Plus,
+  Search,
+  MoreHorizontal,
+  Eye,
+  Edit,
+  Trash2,
+  ExternalLink,
+  Rocket,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -29,7 +57,11 @@ export default function MyListings() {
   const { data: listings = [], isLoading } = useQuery({
     queryKey: ["my-listings", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("listings").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("listings")
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -48,8 +80,11 @@ export default function MyListings() {
   });
 
   const filteredListings = listings.filter((listing: any) => {
-    const matchesSearch = listing.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || listing.status === statusFilter;
+    const matchesSearch = listing.title
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || listing.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -57,21 +92,39 @@ export default function MyListings() {
     <div className="p-6 lg:p-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">My Listings</h1>
-          <p className="text-muted-foreground">Manage and track your marketplace listings</p>
+          <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
+            My Listings
+          </h1>
+          <p className="text-muted-foreground">
+            Manage and track your marketplace listings
+          </p>
         </div>
-        <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
-          <Link to="/dashboard/listings/new"><Plus className="h-4 w-4 mr-2" />New Listing</Link>
+        <Button
+          asChild
+          className="bg-accent hover:bg-accent/90 text-accent-foreground"
+        >
+          <Link to="/dashboard/listings/new">
+            <Plus className="h-4 w-4 mr-2" />
+            New Listing
+          </Link>
         </Button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input type="search" placeholder="Search listings..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
+          <Input
+            type="search"
+            placeholder="Search listings..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="active">Active</SelectItem>
@@ -99,26 +152,72 @@ export default function MyListings() {
               <TableRow key={listing.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <img src={listing.images?.[0] || "/placeholder.svg"} alt={listing.title} className="w-12 h-9 rounded object-cover" />
+                    <img
+                      src={listing.images?.[0] || "/placeholder.svg"}
+                      alt={listing.title}
+                      className="w-12 h-9 rounded object-cover"
+                    />
                     <div>
-                      <p className="font-medium text-foreground line-clamp-1">{listing.title}</p>
-                      <p className="text-xs text-muted-foreground">Created {new Date(listing.created_at).toLocaleDateString()}</p>
+                      <p className="font-medium text-foreground line-clamp-1">
+                        {listing.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Created{" "}
+                        {new Date(listing.created_at).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{listing.category}</TableCell>
-                <TableCell><Badge variant="secondary" className={statusColors[listing.status] || ""}>{listing.status}</Badge></TableCell>
-                <TableCell className="font-medium">{listing.price_label || `₦${Number(listing.price).toLocaleString()}`}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {listing.category}
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant="secondary"
+                    className={statusColors[listing.status] || ""}
+                  >
+                    {listing.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="font-medium">
+                  {listing.price_label ||
+                    `₦${Number(listing.price).toLocaleString()}`}
+                </TableCell>
                 <TableCell className="text-right">{listing.views}</TableCell>
                 <TableCell>
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild><Link to={`/listing/${listing.id}`}><ExternalLink className="h-4 w-4 mr-2" />View</Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link to={`/dashboard/listings/${listing.id}/edit`}><Edit className="h-4 w-4 mr-2" />Edit</Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link to={`/dashboard/boost/listing/${listing.id}`}><Rocket className="h-4 w-4 mr-2" />Boost</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to={`/listing/${listing.id}`}>
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          View
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to={`/dashboard/listings/${listing.id}/edit`}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to={`/dashboard/boost/listing/${listing.id}`}>
+                          <Rocket className="h-4 w-4 mr-2" />
+                          Boost
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(listing.id)}><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => deleteMutation.mutate(listing.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -130,7 +229,11 @@ export default function MyListings() {
         {!isLoading && filteredListings.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">No listings found</p>
-            <Button asChild><Link to="/dashboard/listings/new">Create your first listing</Link></Button>
+            <Button asChild>
+              <Link to="/dashboard/listings/new">
+                Create your first listing
+              </Link>
+            </Button>
           </div>
         )}
       </div>

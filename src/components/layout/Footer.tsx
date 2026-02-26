@@ -1,5 +1,12 @@
 import { Link } from "react-router-dom";
-import { Facebook, Twitter, Instagram, Mail, Phone, MapPin } from "lucide-react";
+import {
+  Facebook,
+  Twitter,
+  Instagram,
+  Mail,
+  Phone,
+  MapPin,
+} from "lucide-react";
 import fabcLogo from "@/assets/festac-amuwo-logo.png";
 
 const footerLinks = {
@@ -26,9 +33,17 @@ const footerLinks = {
 };
 
 const socialLinks = [
-  { name: "Facebook", icon: Facebook, href: "#" },
-  { name: "Twitter", icon: Twitter, href: "#" },
-  { name: "Instagram", icon: Instagram, href: "#" },
+  {
+    name: "Facebook",
+    icon: Facebook,
+    href: "https://web.facebook.com/profile.php?id=61573578504920",
+  },
+  // { name: "Twitter", icon: Twitter, href: "#" },
+  {
+    name: "Instagram",
+    icon: Instagram,
+    href: "https://www.instagram.com/festacamuwo_businessconnect/",
+  },
 ];
 
 export function Footer() {
@@ -45,27 +60,30 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-background/60 mb-6 max-w-sm">
-              Connecting the Festac Town community. Your local marketplace for products, services, real estate, and more.
+              Connecting the Festac Town community. Your local marketplace for
+              products, services, real estate, and more.
             </p>
             <div className="space-y-3 text-sm">
               <div className="flex items-center gap-3">
                 <MapPin className="h-4 w-4 text-primary" />
-                <span>Festac Town, Lagos, Nigeria</span>
+                <span>112 road F close house 2. Festac Town</span>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-primary" />
-                <span>+234 800 000 0000</span>
+                <span>+234 904 862 7112</span>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-primary" />
-                <span>hello@festacconnect.com</span>
+                <span>festacconnect.business@gmail.com</span>
               </div>
             </div>
           </div>
 
           {/* Links */}
           <div>
-            <h3 className="font-display font-semibold text-background mb-4">Marketplace</h3>
+            <h3 className="font-display font-semibold text-background mb-4">
+              Marketplace
+            </h3>
             <ul className="space-y-2">
               {footerLinks.marketplace.map((link) => (
                 <li key={link.name}>
@@ -81,7 +99,9 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="font-display font-semibold text-background mb-4">Community</h3>
+            <h3 className="font-display font-semibold text-background mb-4">
+              Community
+            </h3>
             <ul className="space-y-2">
               {footerLinks.community.map((link) => (
                 <li key={link.name}>
@@ -97,7 +117,9 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="font-display font-semibold text-background mb-4">Support</h3>
+            <h3 className="font-display font-semibold text-background mb-4">
+              Support
+            </h3>
             <ul className="space-y-2">
               {footerLinks.support.map((link) => (
                 <li key={link.name}>
@@ -123,6 +145,7 @@ export function Footer() {
               <a
                 key={social.name}
                 href={social.href}
+                target="_blank"
                 className="h-10 w-10 flex items-center justify-center rounded-full bg-background/10 hover:bg-primary transition-colors"
                 aria-label={social.name}
               >
