@@ -18,6 +18,8 @@ import CommunityPostDetail from "./pages/CommunityPostDetail";
 import NewCommunityPost from "./pages/NewCommunityPost";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import DashboardOverview from "./pages/DashboardOverview";
 import MyListings from "./pages/MyListings";
@@ -54,11 +56,28 @@ const App = () => (
               <Route path="/business/:id" element={<BusinessDetail />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:id" element={<JobDetail />} />
-              <Route path="/jobs/post" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
+              <Route
+                path="/jobs/post"
+                element={
+                  <ProtectedRoute>
+                    <PostJob />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/community" element={<Community />} />
-              <Route path="/community/new" element={<ProtectedRoute><NewCommunityPost /></ProtectedRoute>} />
+              <Route
+                path="/community/new"
+                element={
+                  <ProtectedRoute>
+                    <NewCommunityPost />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/community/:id" element={<CommunityPostDetail />} />
-              <Route path="/list-your-business" element={<ListYourBusiness />} />
+              <Route
+                path="/list-your-business"
+                element={<ListYourBusiness />}
+              />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/contact" element={<Contact />} />
@@ -69,9 +88,18 @@ const App = () => (
             {/* Auth routes (no layout) */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Dashboard routes (protected) */}
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}>
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<DashboardOverview />} />
               <Route path="listings" element={<MyListings />} />
               <Route path="listings/new" element={<NewListing />} />
@@ -81,7 +109,10 @@ const App = () => (
               <Route path="businesses/:id/edit" element={<NewBusiness />} />
               <Route path="boost/:type/:id" element={<BoostListing />} />
               <Route path="favorites" element={<DashboardFavorites />} />
-              <Route path="notifications" element={<DashboardNotifications />} />
+              <Route
+                path="notifications"
+                element={<DashboardNotifications />}
+              />
               <Route path="settings" element={<DashboardSettings />} />
             </Route>
 
