@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        setTimeout(() => fetchProfile(session.user.id), 0);
+        await fetchProfile(session.user.id);
       } else {
         setProfile(null);
       }
@@ -85,19 +85,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       phone: metadata?.phone,
       options: {
         data: metadata,
-        emailRedirectTo: window.location.origin,
+        // emailRedirectTo: window.location.origin,
       },
     });
-    console.log(data.user);
     if (data.user && !error) {
-      await supabase.from("profiles").insert({
+      const profileData = {
         user_id: data.user.id,
         first_name: metadata?.first_name,
         last_name: metadata?.last_name,
         phone: metadata?.phone,
         account_type: metadata?.account_type,
-      });
+      };
+
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .insert(profileData);
+
+      if (!profileError) {
+        setProfile(profileData); // 👈 THIS FIXES YOUR ISSUE
+      }
     }
+
     return { data, error };
   };
 
@@ -110,7 +118,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error("Sign out error:", error.message);
+      return;
+    }
+
+    setUser(null);
+    setSession(null);
     setProfile(null);
   };
 

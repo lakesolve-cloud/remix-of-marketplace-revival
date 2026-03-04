@@ -13,6 +13,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import fabcLogo from "@/assets/festac-amuwo-logo.png";
+import { useToast } from "@/hooks/use-toast";
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -28,6 +29,7 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
+  const { toast } = useToast();
 
   const isActive = (href: string) => {
     if (href === "/") return location.pathname === "/";
@@ -35,8 +37,16 @@ export function Header() {
   };
 
   const handleSignOut = async () => {
+    console.log("Signing out...");
     await signOut();
-    navigate("/");
+    console.log("Signed out!");
+
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+
+    navigate("/login");
   };
 
   return (
@@ -120,7 +130,10 @@ export function Header() {
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      onClick={handleSignOut}
+                      onSelect={(e) => {
+                        e.preventDefault(); // 🔥 THIS IS THE FIX
+                        handleSignOut();
+                      }}
                       className="text-destructive"
                     >
                       <LogOut className="h-4 w-4 mr-2" />
