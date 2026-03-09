@@ -19,9 +19,9 @@ export default function ResetPassword() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check for existing recovery session
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
-
       if (data.session) {
         setIsRecovery(true);
       }
@@ -29,10 +29,11 @@ export default function ResetPassword() {
 
     checkSession();
 
+    // Listen for PASSWORD_RECOVERY event (fired when user clicks email link)
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
         setIsRecovery(true);
       }
     });
@@ -42,6 +43,7 @@ export default function ResetPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (password !== confirmPassword) {
       toast({
         title: "Error",
@@ -50,6 +52,7 @@ export default function ResetPassword() {
       });
       return;
     }
+
     if (password.length < 6) {
       toast({
         title: "Error",
@@ -58,10 +61,13 @@ export default function ResetPassword() {
       });
       return;
     }
+
     setIsLoading(true);
+
     const { data, error } = await supabase.auth.updateUser({ password });
-    console.log(data);
+    console.log(data, error);
     setIsLoading(false);
+
     if (error) {
       toast({
         title: "Error",
@@ -70,10 +76,35 @@ export default function ResetPassword() {
       });
     } else {
       setSuccess(true);
+      // Auto-redirect to login after 2 seconds
+      setTimeout(() => navigate("/login"), 2000);
     }
   };
 
-  if (!isRecovery && !success) {
+  // ✅ Check success FIRST before the isRecovery guard
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8 bg-background">
+        <div className="w-full max-w-md text-center space-y-4">
+          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <CheckCircle className="h-8 w-8 text-primary" />
+          </div>
+          <h1 className="font-display text-2xl font-bold text-foreground">
+            Password updated!
+          </h1>
+          <p className="text-muted-foreground">
+            Your password has been successfully reset. Redirecting to login...
+          </p>
+          <Button onClick={() => navigate("/login")} className="mt-4">
+            Go to Login
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ Only block access if not in recovery AND not already successful
+  if (!isRecovery) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md text-center space-y-4">
@@ -102,78 +133,62 @@ export default function ResetPassword() {
           </span>
         </Link>
 
-        {success ? (
-          <div className="text-center space-y-4">
-            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <CheckCircle className="h-8 w-8 text-primary" />
-            </div>
-            <h1 className="font-display text-2xl font-bold text-foreground">
-              Password updated!
-            </h1>
-            <p className="text-muted-foreground">
-              Your password has been successfully reset.
-            </p>
-            <Button onClick={() => navigate("/login")} className="mt-4">
-              Go to Login
-            </Button>
-          </div>
-        ) : (
-          <>
-            <h1 className="font-display text-3xl font-bold text-foreground mb-2">
-              Set new password
-            </h1>
-            <p className="text-muted-foreground mb-8">
-              Enter your new password below.
-            </p>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="password">New Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm">Confirm Password</Label>
-                <Input
-                  id="confirm"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-              </div>
+        <h1 className="font-display text-3xl font-bold text-foreground mb-2">
+          Set new password
+        </h1>
+        <p className="text-muted-foreground mb-8">
+          Enter your new password below.
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="password">New Password</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
               <Button
-                type="submit"
-                className="w-full"
-                size="lg"
-                disabled={isLoading}
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full px-3"
+                onClick={() => setShowPassword(!showPassword)}
               >
-                {isLoading ? "Updating..." : "Update Password"}
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                )}
               </Button>
-            </form>
-          </>
-        )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirm">Confirm Password</Label>
+            <Input
+              id="confirm"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            disabled={isLoading}
+          >
+            {isLoading ? "Updating..." : "Update Password"}
+          </Button>
+        </form>
       </div>
     </div>
   );
