@@ -19,7 +19,24 @@ export default function ResetPassword() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Listen for the PASSWORD_RECOVERY event
+    const initRecovery = async () => {
+      const hash = window.location.hash;
+
+      if (hash.includes("type=recovery")) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(
+          window.location.href,
+        );
+
+        if (!error) {
+          setIsRecovery(true);
+        } else {
+          console.error(error);
+        }
+      }
+    };
+
+    initRecovery();
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
@@ -27,12 +44,6 @@ export default function ResetPassword() {
         setIsRecovery(true);
       }
     });
-
-    // Also check hash for type=recovery
-    const hash = window.location.hash;
-    if (hash.includes("type=recovery")) {
-      setIsRecovery(true);
-    }
 
     return () => subscription.unsubscribe();
   }, []);
@@ -56,7 +67,8 @@ export default function ResetPassword() {
       return;
     }
     setIsLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    const { data, error } = await supabase.auth.updateUser({ password });
+    console.log(data, error);
     setIsLoading(false);
     if (error) {
       toast({
@@ -66,6 +78,9 @@ export default function ResetPassword() {
       });
     } else {
       setSuccess(true);
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
     }
   };
 
