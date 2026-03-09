@@ -109,8 +109,8 @@ export default function ResetPassword() {
             <p className="text-muted-foreground">
               Your password has been successfully reset.
             </p>
-            <Button onClick={() => navigate("/dashboard")} className="mt-4">
-              Go to Dashboard
+            <Button onClick={() => navigate("/login")} className="mt-4">
+              Go to Login
             </Button>
           </div>
         ) : (
