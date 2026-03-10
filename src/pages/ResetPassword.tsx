@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,11 +17,14 @@ export default function ResetPassword() {
   const [isRecovery, setIsRecovery] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
 
   useEffect(() => {
     // 1. Check if we already have a session (user just clicked the link)
     const checkInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session) {
         console.log("Initial session detected");
         setIsRecovery(true);
@@ -30,13 +33,16 @@ export default function ResetPassword() {
     checkInitialSession();
 
     // 2. Listen for the specific PASSWORD_RECOVERY event
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth event:", event);
       if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
         setIsRecovery(true);
       }
     });
 
+    subscriptionRef.current = subscription;
     return () => subscription.unsubscribe();
   }, []);
 
@@ -64,7 +70,7 @@ export default function ResetPassword() {
     setIsLoading(true);
 
     try {
-      // We attempt the update directly. If the session is invalid, 
+      // We attempt the update directly. If the session is invalid,
       // Supabase will return an error which we catch below.
       const { error } = await supabase.auth.updateUser({ password });
 
@@ -76,13 +82,17 @@ export default function ResetPassword() {
         });
       } else {
         // SUCCESS PATH
+        // 1. Unsubscribe FIRST so signOut doesn't trigger state changes
+        subscriptionRef.current?.unsubscribe();
+
+        // 2. Show success UI
         setSuccess(true);
-        
-        // Final cleanup: Sign out so they have to log in with the NEW password
+
+        // 3. Sign out cleanly
         await supabase.auth.signOut();
-        
-        // Automatic redirect after a short delay
-        setTimeout(() => navigate("/login"), 3000);
+
+        // 4. Navigate after a short delay
+        setTimeout(() => navigate("/login"), 2000);
       }
     } catch (err) {
       console.error("Exception:", err);
@@ -105,12 +115,19 @@ export default function ResetPassword() {
             <CheckCircle className="h-10 w-10 text-green-600" />
           </div>
           <div className="space-y-2">
-            <h1 className="font-display text-3xl font-bold text-foreground">Password updated!</h1>
+            <h1 className="font-display text-3xl font-bold text-foreground">
+              Password updated!
+            </h1>
             <p className="text-muted-foreground">
-              Your new password is set. We're taking you back to the login page...
+              Your new password is set. We're taking you back to the login
+              page...
             </p>
           </div>
-          <Button onClick={() => navigate("/login")} className="w-full" variant="outline">
+          <Button
+            onClick={() => navigate("/login")}
+            className="w-full"
+            variant="outline"
+          >
             Go to Login Now
           </Button>
         </div>
@@ -127,7 +144,9 @@ export default function ResetPassword() {
             <AlertCircle className="h-10 w-10 text-red-600" />
           </div>
           <div className="space-y-2">
-            <h1 className="font-display text-2xl font-bold text-foreground">Invalid Link</h1>
+            <h1 className="font-display text-2xl font-bold text-foreground">
+              Invalid Link
+            </h1>
             <p className="text-muted-foreground">
               This reset link has expired or was already used.
             </p>
@@ -177,7 +196,11 @@ export default function ResetPassword() {
                 className="absolute right-0 top-0 h-full px-3"
                 onClick={() => setShowPassword(!showPassword)}
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </div>
