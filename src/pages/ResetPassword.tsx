@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,27 +19,25 @@ export default function ResetPassword() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleRecovery = async () => {
-      // Clear any existing session so the recovery token takes over cleanly
-      await supabase.auth.signOut();
-
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((event, session) => {
-        console.log("Auth event:", event, session);
-        if (event === "PASSWORD_RECOVERY" && session) {
-          setIsRecovery(true);
-          supabase.auth.setSession({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-          });
-        }
-      });
-
-      return () => subscription.unsubscribe();
+    // 1. Check if we already have a session (user just clicked the link)
+    const checkInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        console.log("Initial session detected");
+        setIsRecovery(true);
+      }
     };
+    checkInitialSession();
 
-    handleRecovery();
+    // 2. Listen for the specific PASSWORD_RECOVERY event
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth event:", event);
+      if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
+        setIsRecovery(true);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,41 +63,32 @@ export default function ResetPassword() {
 
     setIsLoading(true);
 
-    // Verify session exists right before submitting
-    const { data: sessionData } = await supabase.auth.getSession();
-    console.log("Session at submit time:", sessionData.session);
-
-    if (!sessionData.session) {
-      toast({
-        title: "Session expired",
-        description: "Please request a new password reset link.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      const { data, error } = await supabase.auth.updateUser({ password });
-      console.log("Result:", { data, error });
+      // We attempt the update directly. If the session is invalid, 
+      // Supabase will return an error which we catch below.
+      const { error } = await supabase.auth.updateUser({ password });
 
       if (error) {
         toast({
-          title: "Error",
+          title: "Update Failed",
           description: error.message,
           variant: "destructive",
         });
       } else {
-        // Sign out so user is forced to log in fresh with new password
-        await supabase.auth.signOut();
+        // SUCCESS PATH
         setSuccess(true);
-        setTimeout(() => navigate("/login"), 2000);
+        
+        // Final cleanup: Sign out so they have to log in with the NEW password
+        await supabase.auth.signOut();
+        
+        // Automatic redirect after a short delay
+        setTimeout(() => navigate("/login"), 3000);
       }
     } catch (err) {
       console.error("Exception:", err);
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again.",
+        description: "An unexpected error occurred.",
         variant: "destructive",
       });
     } finally {
@@ -107,48 +96,51 @@ export default function ResetPassword() {
     }
   };
 
-  // Check success FIRST before the isRecovery guard
+  // 1. Success State UI
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-md text-center space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <CheckCircle className="h-8 w-8 text-primary" />
+        <div className="w-full max-w-md text-center space-y-6">
+          <div className="mx-auto w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+            <CheckCircle className="h-10 w-10 text-green-600" />
           </div>
-          <h1 className="font-display text-2xl font-bold text-foreground">
-            Password updated!
-          </h1>
-          <p className="text-muted-foreground">
-            Your password has been successfully reset. Redirecting to login...
-          </p>
-          <Button onClick={() => navigate("/login")} className="mt-4">
-            Go to Login
+          <div className="space-y-2">
+            <h1 className="font-display text-3xl font-bold text-foreground">Password updated!</h1>
+            <p className="text-muted-foreground">
+              Your new password is set. We're taking you back to the login page...
+            </p>
+          </div>
+          <Button onClick={() => navigate("/login")} className="w-full" variant="outline">
+            Go to Login Now
           </Button>
         </div>
       </div>
     );
   }
 
-  // Only block access if not in a valid recovery state
-  if (!isRecovery) {
+  // 2. Invalid Session State UI
+  if (!isRecovery && !isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-md text-center space-y-4">
-          <h1 className="font-display text-2xl font-bold text-foreground">
-            Invalid or expired link
-          </h1>
-          <p className="text-muted-foreground">
-            This password reset link is invalid or has expired. Please request a
-            new one.
-          </p>
+        <div className="w-full max-w-md text-center space-y-6">
+          <div className="mx-auto w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
+            <AlertCircle className="h-10 w-10 text-red-600" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="font-display text-2xl font-bold text-foreground">Invalid Link</h1>
+            <p className="text-muted-foreground">
+              This reset link has expired or was already used.
+            </p>
+          </div>
           <Link to="/forgot-password">
-            <Button className="mt-4">Request New Link</Button>
+            <Button className="w-full">Request New Link</Button>
           </Link>
         </div>
       </div>
     );
   }
 
+  // 3. Main Form UI
   return (
     <div className="min-h-screen flex items-center justify-center p-8 bg-background">
       <div className="w-full max-w-md">
@@ -163,7 +155,7 @@ export default function ResetPassword() {
           Set new password
         </h1>
         <p className="text-muted-foreground mb-8">
-          Enter your new password below.
+          Almost there! Enter your new secure password below.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -185,11 +177,7 @@ export default function ResetPassword() {
                 className="absolute right-0 top-0 h-full px-3"
                 onClick={() => setShowPassword(!showPassword)}
               >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <Eye className="h-4 w-4 text-muted-foreground" />
-                )}
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
           </div>
@@ -212,7 +200,7 @@ export default function ResetPassword() {
             size="lg"
             disabled={isLoading}
           >
-            {isLoading ? "Updating..." : "Update Password"}
+            {isLoading ? "Saving..." : "Update Password"}
           </Button>
         </form>
       </div>
