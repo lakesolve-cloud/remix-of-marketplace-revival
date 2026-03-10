@@ -19,26 +19,27 @@ export default function ResetPassword() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for existing recovery session
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        setIsRecovery(true);
-      }
+    const handleRecovery = async () => {
+      // Clear any existing session so the recovery token takes over cleanly
+      await supabase.auth.signOut();
+
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event, session) => {
+        console.log("Auth event:", event, session);
+        if (event === "PASSWORD_RECOVERY" && session) {
+          setIsRecovery(true);
+          supabase.auth.setSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          });
+        }
+      });
+
+      return () => subscription.unsubscribe();
     };
 
-    checkSession();
-
-    // Listen for PASSWORD_RECOVERY event (fired when user clicks email link)
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
-        setIsRecovery(true);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    handleRecovery();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,24 +65,49 @@ export default function ResetPassword() {
 
     setIsLoading(true);
 
-    const { data, error } = await supabase.auth.updateUser({ password });
-    console.log(data, error);
-    setIsLoading(false);
+    // Verify session exists right before submitting
+    const { data: sessionData } = await supabase.auth.getSession();
+    console.log("Session at submit time:", sessionData.session);
 
-    if (error) {
+    if (!sessionData.session) {
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Session expired",
+        description: "Please request a new password reset link.",
         variant: "destructive",
       });
-    } else {
-      setSuccess(true);
-      // Auto-redirect to login after 2 seconds
-      setTimeout(() => navigate("/login"), 2000);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.auth.updateUser({ password });
+      console.log("Result:", { data, error });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        // Sign out so user is forced to log in fresh with new password
+        await supabase.auth.signOut();
+        setSuccess(true);
+        setTimeout(() => navigate("/login"), 2000);
+      }
+    } catch (err) {
+      console.error("Exception:", err);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // ✅ Check success FIRST before the isRecovery guard
+  // Check success FIRST before the isRecovery guard
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8 bg-background">
@@ -103,7 +129,7 @@ export default function ResetPassword() {
     );
   }
 
-  // ✅ Only block access if not in recovery AND not already successful
+  // Only block access if not in a valid recovery state
   if (!isRecovery) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8 bg-background">
