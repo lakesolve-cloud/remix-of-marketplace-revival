@@ -13,6 +13,7 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingRecovery, setIsCheckingRecovery] = useState(true);
   const [success, setSuccess] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
   const { toast } = useToast();
@@ -20,34 +21,103 @@ export default function ResetPassword() {
   const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
 
   useEffect(() => {
-    // 1. Check if we already have a session (user just clicked the link)
+    let isMounted = true;
+    const hashParams = new URLSearchParams(
+      window.location.hash.replace(/^#/, ""),
+    );
+    const searchParams = new URLSearchParams(window.location.search);
+    const hasRecoveryParams =
+      hashParams.has("access_token") ||
+      hashParams.has("refresh_token") ||
+      hashParams.get("type") === "recovery" ||
+      searchParams.has("code") ||
+      searchParams.get("type") === "recovery";
+
+    // Avoid flashing the invalid-link UI while Supabase is still resolving
+    // the recovery session from the URL tokens.
+    const fallbackTimer = window.setTimeout(
+      () => {
+        if (isMounted) {
+          setIsCheckingRecovery(false);
+        }
+      },
+      hasRecoveryParams ? 2000 : 0,
+    );
+
     const checkInitialSession = async () => {
       const {
         data: { session },
+        error,
       } = await supabase.auth.getSession();
+
+      if (!isMounted) {
+        return;
+      }
+
       if (session) {
-        console.log("Initial session detected");
         setIsRecovery(true);
+        setIsCheckingRecovery(false);
+        return;
+      }
+
+      if (error) {
+        toast({
+          title: "Invalid reset link",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+
+      if (!hasRecoveryParams) {
+        setIsCheckingRecovery(false);
       }
     };
+
     checkInitialSession();
 
-    // 2. Listen for the specific PASSWORD_RECOVERY event
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth event:", event);
+      if (!isMounted) {
+        return;
+      }
+
       if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
         setIsRecovery(true);
+        setIsCheckingRecovery(false);
+        return;
+      }
+
+      if (event === "INITIAL_SESSION" && !session && !hasRecoveryParams) {
+        setIsCheckingRecovery(false);
       }
     });
 
     subscriptionRef.current = subscription;
-    return () => subscription.unsubscribe();
+
+    return () => {
+      isMounted = false;
+      window.clearTimeout(fallbackTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isLoading) {
+      return;
+    }
+
+    if (!isRecovery) {
+      toast({
+        title: "Invalid reset link",
+        description:
+          "Open the latest password reset link from your email and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (password !== confirmPassword) {
       toast({
@@ -70,8 +140,6 @@ export default function ResetPassword() {
     setIsLoading(true);
 
     try {
-      // We attempt the update directly. If the session is invalid,
-      // Supabase will return an error which we catch below.
       const { error } = await supabase.auth.updateUser({ password });
 
       if (error) {
@@ -81,24 +149,23 @@ export default function ResetPassword() {
           variant: "destructive",
         });
       } else {
-        // SUCCESS PATH
-        // 1. Unsubscribe FIRST so signOut doesn't trigger state changes
         subscriptionRef.current?.unsubscribe();
-
-        // 2. Show success UI
+        toast({
+          title: "Password updated",
+          description: "Your password has been changed successfully.",
+        });
         setSuccess(true);
 
-        // 3. Sign out cleanly
         await supabase.auth.signOut();
-
-        // 4. Navigate after a short delay
         setTimeout(() => navigate("/login"), 2000);
       }
     } catch (err) {
-      console.error("Exception:", err);
+      const message =
+        err instanceof Error ? err.message : "An unexpected error occurred.";
+
       toast({
         title: "Error",
-        description: "An unexpected error occurred.",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -135,8 +202,23 @@ export default function ResetPassword() {
     );
   }
 
+  if (isCheckingRecovery) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8 bg-background">
+        <div className="w-full max-w-md text-center space-y-3">
+          <h1 className="font-display text-2xl font-bold text-foreground">
+            Verifying reset link
+          </h1>
+          <p className="text-muted-foreground">
+            Please wait while we validate your password reset session.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // 2. Invalid Session State UI
-  if (!isRecovery && !isLoading) {
+  if (!isRecovery) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md text-center space-y-6">
